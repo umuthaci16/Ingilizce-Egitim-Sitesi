@@ -1,0 +1,14 @@
+{
+  "A1": {
+    "topic": "Which do you prefer: tea or coffee? Why?",
+    "instructions": "Please answer in full sentences. Say which one you like and give a simple reason. Try to speak for about 30-45 seconds."
+  },
+  "B1": {
+    "topic": "Your city has too much traffic. What can people do to reduce it?",
+    "instructions": "Describe the problem briefly and give 2 or 3 specific suggestions. Explain why your solutions would work. Try to speak for about 1 minute."
+  },
+  "C1": {
+    "topic": "Do you think social media does more harm than good? Why or why not?",
+    "instructions": "Analyze this topic critically. Discuss both the positive and negative aspects of social media. Give examples to support your opinion and structure your argument logically. Try to speak for about 1-2 minutes."
+  }
+}

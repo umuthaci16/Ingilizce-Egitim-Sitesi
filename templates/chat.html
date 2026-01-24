@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ title }}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+ 
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='favicon/site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+ 
+    <script>
+    if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('dark');
+    } else {
+        document.documentElement.classList.remove('dark');
+    }
+    </script>
+
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+
+    /* Mesaj Balonları */
+    #chatBox { scroll-behavior: smooth; }
+    
+    /* USER BUBBLE */
+    .user { 
+        align-self: flex-end; 
+        background-color: #4F46E5; 
+        color: white; 
+        border-radius: 20px 20px 0 20px; 
+        padding: 14px 20px; 
+        max-width: 85%; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        margin-bottom: 16px;
+        font-size: 1.125rem; 
+        line-height: 1.6;
+    }
+    .dark .user { background-color: #4338ca; } 
+    
+    /* AI BUBBLE */
+    .ai { 
+        align-self: flex-start; 
+        background-color: #F3F4F6; 
+        color: #1F2937; 
+        border-radius: 20px 20px 20px 0; 
+        padding: 14px 20px; 
+        max-width: 85%; 
+        border: 1px solid #E5E7EB;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 16px;
+        font-size: 1.125rem;
+        line-height: 1.6;
+        position: relative;
+    }
+    .dark .ai {
+        background-color: #374151; /* gray-700 */
+        color: #F3F4F6; /* gray-100 */
+        border-color: #4B5563; /* gray-600 */
+    }
+
+    /* Kelime Efekti */
+    .trans-word { cursor: pointer; transition: all 0.2s; font-weight: 400; }
+    .trans-word:hover { 
+        color: #4338ca; 
+        font-weight: 600;
+        background-color: rgba(79, 70, 229, 0.05);
+        border-radius: 4px;
+    }
+    .dark .trans-word:hover {
+        color: #A5B4FC; /* indigo-300 */
+        background-color: rgba(165, 180, 252, 0.1);
+    }
+    
+    /* Popup Stilleri */
+    .translation-popup { 
+        position: fixed; 
+        background: white; 
+        border: 1px solid #E5E7EB; 
+        border-radius: 12px; 
+        padding: 0; 
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); 
+        z-index: 9999; 
+        max-width: 280px; 
+        min-width: 180px;
+        font-size: 0.95rem;
+        overflow: hidden;
+        animation: fadeIn 0.15s ease-out;
+    }
+    .dark .translation-popup {
+        background-color: #1F2937; /* gray-800 */
+        border-color: #374151; /* gray-700 */
+        color: #F3F4F6;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+    .tp-header {
+        background-color: #F9FAFB;
+        padding: 10px 14px;
+        border-bottom: 1px solid #F3F4F6;
+        font-weight: 700;
+        color: #4F46E5;
+        font-size: 1rem;
+    }
+    .dark .tp-header {
+        background-color: #111827; /* gray-900 */
+        border-bottom-color: #374151;
+        color: #818CF8; /* indigo-400 */
+    }
+
+    .tp-body { padding: 12px 14px; }
+    .tp-row { margin-bottom: 8px; line-height: 1.4; }
+    .tp-label { 
+        display: inline-block; 
+        font-size: 0.7rem; 
+        text-transform: uppercase; 
+        font-weight: 700; 
+        color: #6B7280; 
+        margin-right: 6px; 
+        background: #F3F4F6;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+    .dark .tp-label {
+        color: #9CA3AF;
+        background: #374151;
+    }
+
+    .tp-alt { font-size: 0.9rem; color: #4B5563; }
+    .dark .tp-alt { color: #D1D5DB; }
+    
+    .ai-translation {
+        display: block;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid rgba(0,0,0,0.1);
+        font-size: 0.9em;
+        font-style: italic;
+        color: #4B5563;
+    }
+    .dark .ai-translation {
+        border-top-color: rgba(255,255,255,0.1);
+        color: #9CA3AF;
+    }
+
+
+/* ================= SCROLLBAR (LIGHT MODE) ================= */
+
+/* Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db transparent; /* gray-300 */
+}
+
+/* Chrome / Edge / Safari */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #d1d5db; /* gray-300 */
+    border-radius: 20px;
+    border: 2px solid transparent;   /* içten boşluk */
+    background-clip: content-box;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af; /* gray-400 */
+}
+
+/* ================= DARK MODE ================= */
+
+.dark .custom-scrollbar {
+    scrollbar-color: #4b5563 transparent; /* gray-600 */
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4b5563; /* gray-600 */
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #6b7280; /* gray-500 */
+}
+
+    </style>
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 h-dvh flex flex-col font-sans overflow-hidden overscroll-none transition-colors">
+
+    <div id="global-loader" class="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-400"></div>
+    </div>
+
+  <div class="bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center gap-4 z-10 px-6 shrink-0 border-b border-gray-100 dark:border-gray-700 transition-colors">
+    <a href="{{url_for('main.practice')}}" class="text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full group" title="Geri Dön">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-6 h-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+        </svg>
+    </a>
+    <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ title }}</h2>
+    <div class="ml-auto flex items-center gap-2">
+        <button id="themeToggle" class="p-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition focus:outline-none" type="button" title="Tema">
+            <!-- Sun icon (light) -->
+            <svg id="themeIconLight" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364 6.364l-1.414-1.414M7.05 7.05L5.636 5.636M18.364 5.636l-1.414 1.414M7.05 16.95l-1.414 1.414M12 8a4 4 0 100 8 4 4 0 000-8z"/>
+            </svg>
+            <!-- Moon icon (dark) -->
+            <svg id="themeIconDark" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+            </svg>
+        </button>
+    </div>
+  </div>
+
+<div class="w-full flex-1 overflow-hidden relative flex flex-col">
+    <!-- SCROLL CONTAINER -->
+    <div id="chatScroll"
+         class="flex-1 overflow-y-auto custom-scrollbar">
+
+        <!-- CONTENT CONTAINER -->
+        <div id="chatBox"
+             class="w-full max-w-6xl mx-auto p-4 md:p-6 flex flex-col">
+        </div>
+
+    </div>
+</div>
+
+  <div class="w-full bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 px-3 pt-3 pb-8 md:p-6 shrink-0 z-20 transition-colors">
+    <div class="max-w-6xl mx-auto flex items-center gap-2 md:gap-4">
+        
+        <input id="userInput" type="text" spellcheck="false" autocomplete="off" placeholder="Mesajınızı yazın..." 
+               class="flex-1 bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-full px-5 py-3 md:py-4 text-base md:text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-sm placeholder-gray-400 dark:placeholder-gray-500">
+
+        <div class="flex items-center gap-2 shrink-0">
+            
+            <button id="recBtn" class="p-3 md:p-4 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition focus:outline-none border border-gray-200 dark:border-gray-600 shadow-sm group" type="button" title="Sesli giriş">
+                <svg id="micIconSvg" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 group-hover:text-gray-800 dark:group-hover:text-white transition-colors">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                </svg>
+            </button>
+
+            <button id="sendBtn" class="p-3 md:p-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full transition shadow-md focus:outline-none active:scale-95 transform flex items-center justify-center" type="button" title="Gönder">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 ml-0.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                </svg>
+            </button>
+        </div>
+    </div>
+  </div>
+</div>
+  <script>
+    // ==========================================
+    // 1. GLOBAL DEĞİŞKENLER
+    // ==========================================
+    const scenario = "{{ scenario }}";
+    const chatBox = document.getElementById("chatBox");
+    const input = document.getElementById("userInput");
+    const recBtn = document.getElementById("recBtn");
+    const sendBtn = document.getElementById("sendBtn");
+    
+    let isRecording = false;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let currentSpeakingBtn = null;
+
+    // ==========================================
+    // 2. YARDIMCI FONKSİYONLAR
+    // ==========================================
+
+    function showToast(msg, timeout = 5000){
+      const prev = document.getElementById('chat-toast');
+      if(prev) prev.remove();
+      const d = document.createElement('div');
+      d.id = 'chat-toast';
+      d.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-700 text-white px-6 py-3 rounded-lg shadow-xl z-50 text-base fade-in';
+      d.textContent = msg;
+      document.body.appendChild(d);
+      setTimeout(()=>{ d.remove(); }, timeout);
+    }
+
+    function addMessage(sender, text) {
+      const div = document.createElement("div");
+      div.className = sender; 
+      const bubble = document.createElement("span");
+
+      if (sender === 'ai'){
+        // Kelime kelime bölme
+        const parts = text.split(/(\b[\p{L}0-9]+(?:['’\-][\p{L}0-9]+)*)/u);
+        parts.forEach(p=>{
+          if(!p) return;
+          const isWord = /^(?:[\p{L}0-9]+(?:['’\-][\p{L}0-9]+)*)$/u.test(p);
+          if(isWord){
+            const span = document.createElement('span');
+            span.className = 'trans-word';
+            span.textContent = p;
+            span.dataset.word = p;
+            span.onclick = onWordClick;
+            bubble.appendChild(span);
+          } else {
+            bubble.appendChild(document.createTextNode(p));
+          }
+        });
+
+        // Kontrol Kutusu
+        const controlsSpan = document.createElement('span');
+        controlsSpan.style.display = 'inline-flex';
+        controlsSpan.style.gap = '8px';
+        controlsSpan.style.marginLeft = '12px';
+        controlsSpan.style.verticalAlign = 'middle';
+
+        // --- PLAY BUTONU (SVG) ---
+        const playBtn = document.createElement('button');
+        playBtn.className = 'small-btn p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400';
+        playBtn.type = 'button';
+        playBtn.title = 'Dinle';
+        playBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+            </svg>`;
+        playBtn.onclick = function(e){ e.stopPropagation(); toggleSpeak(text, playBtn); };
+
+        // --- ÇEVİRİ BUTONU (SVG) ---
+        const translateBtn = document.createElement('button');
+        translateBtn.className = 'small-btn p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400';
+        translateBtn.type = 'button';
+        translateBtn.title = 'Çevir';
+        translateBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 21l5.25-11.25L21 21m-9-3h7.5M3 5.621a48.474 48.474 0 016-.371m0 0c1.12 0 2.233.038 3.334.114M9 5.25V3m3.334 2.364C11.176 10.658 7.69 15.08 3 17.502m9.334-12.138c.896.061 1.785.147 2.666.257m-4.589 8.495a18.023 18.023 0 01-3.827-5.802" />
+            </svg>`;
+        
+        translateBtn.onclick = async function(e){
+          e.stopPropagation();
+          const existing = div.querySelector('.ai-translation');
+          if(existing){ existing.remove(); return; }
+          try{
+            translateBtn.classList.add('animate-pulse');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const resp = await fetch('/translate_word', {
+              method: 'POST',
+              headers: {'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+              body: JSON.stringify({ word: text, source: 'en', target: 'tr' })
+            });
+            const j = await resp.json();
+            
+            let translated = 'Çeviri bulunamadı';
+            if(j && j.translatedText) translated = j.translatedText;
+            else if(j && j.alternatives && j.alternatives.length > 0) translated = j.alternatives[0];
+
+            const tdiv = document.createElement('div');
+            tdiv.className = 'ai-translation';
+            tdiv.textContent = translated;
+            div.appendChild(tdiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }catch(err){
+            showToast('Çeviri başarısız oldu');
+          }finally{
+            translateBtn.classList.remove('animate-pulse');
+          }
+        };
+
+        controlsSpan.appendChild(playBtn);
+        controlsSpan.appendChild(translateBtn);
+        bubble.appendChild(controlsSpan);
+
+      } else {
+        bubble.appendChild(document.createTextNode(text));
+      }
+
+      div.appendChild(bubble);
+      chatBox.appendChild(div);
+      setTimeout(() => { chatBox.scrollTop = chatBox.scrollHeight; }, 50);
+
+      // AI cevabı otomatik okunsun mu?
+      try{ if(sender === 'ai') toggleSpeak(text, null); }catch(e){ }
+    }
+
+    // ==========================================
+    // 3. POPUP (KELİME ÇEVİRİSİ)
+    // ==========================================
+    let currentPopup = null;
+
+    function closeTranslationPopup() {
+        if (currentPopup) {
+            currentPopup.remove();
+            currentPopup = null;
+        }
+        window.removeEventListener('resize', updatePopupPosition);
+        window.removeEventListener('scroll', updatePopupPosition, true);
+        chatBox.removeEventListener('scroll', updatePopupPosition);
+        document.removeEventListener('click', outsideClickHandler);
+    }
+
+    function repositionPopup(popup) {
+        if (!popup || !popup._target) return;
+        const rect = popup._target.getBoundingClientRect();
+        
+        if (rect.top < 0 || rect.bottom > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
+            closeTranslationPopup();
+            return;
+        }
+
+        const popupWidth = 280; 
+        let left = rect.left;
+        if (left + popupWidth > window.innerWidth) {
+            left = window.innerWidth - popupWidth - 16; 
+        }
+        if (left < 10) left = 10; 
+
+        let top = rect.bottom + 8; 
+        if (top + 200 > window.innerHeight) { 
+            top = rect.top - 8 - popup.offsetHeight;
+            if (top < 0) top = rect.bottom + 8; 
+        }
+
+        popup.style.left = left + 'px';
+        popup.style.top = top + 'px';
+    }
+
+    function updatePopupPosition() {
+        if (currentPopup) repositionPopup(currentPopup);
+    }
+
+    function outsideClickHandler(e) {
+        if (currentPopup && !currentPopup.contains(e.target) && e.target !== currentPopup._target) {
+            closeTranslationPopup();
+        }
+    }
+    
+    async function onWordClick(ev){
+      const target = ev.currentTarget;
+      const word = (target.dataset.word || '').trim();
+      
+      closeTranslationPopup();
+      if(!word) return;
+      
+      showTranslationPopup(target, { loading: true, word: word });
+
+      try{
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+         const resp = await fetch('/translate_word', {
+              method: 'POST', headers: {'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+              body: JSON.stringify({ word: word, source: 'en', target: 'tr' })
+         });
+         const j = await resp.json();
+         
+         if(currentPopup) {
+             closeTranslationPopup(); 
+             showTranslationPopup(target, j);
+         }
+         
+      }catch(e){ 
+          closeTranslationPopup();
+          showTranslationPopup(target, { error: 'Hata oluştu', word: word }); 
+      }
+    }
+
+    function showTranslationPopup(target, data){
+        const popup = document.createElement('div');
+        popup.className = 'translation-popup';
+        popup._target = target;
+
+        let contentHtml = '';
+
+        if(data.loading) {
+            contentHtml = `<div class="tp-header">${data.word}</div><div class="tp-body" style="color:#6B7280;">Aranıyor...</div>`;
+        } else if (data.error) {
+            contentHtml = `<div class="tp-header">${data.word}</div><div class="tp-body" style="color:#EF4444;">${data.error}</div>`;
+        } else {
+            contentHtml += `<div class="tp-header">${data.translatedText || 'Bulunamadı'}</div>`;
+            contentHtml += `<div class="tp-body">`;
+
+            if(data.pos && data.pos.length > 0) {
+                contentHtml += `<div class="tp-row">`;
+                data.pos.forEach(p => { contentHtml += `<span class="tp-label">${p}</span>`; });
+                contentHtml += `</div>`;
+            }
+
+            if(data.alternatives && data.alternatives.length > 0) {
+                const uniqueAlts = data.alternatives.filter(a => a.toLowerCase() !== (data.translatedText || '').toLowerCase()).slice(0, 3);
+                if(uniqueAlts.length > 0){
+                    contentHtml += `<div class="tp-row"><div class="tp-alt">Diğer: ${uniqueAlts.join(', ')}</div></div>`;
+                }
+            }
+            contentHtml += `</div>`;
+        }
+
+        popup.innerHTML = contentHtml;
+        document.body.appendChild(popup);
+        
+        currentPopup = popup;
+        repositionPopup(popup);
+
+        window.addEventListener('resize', updatePopupPosition);
+        window.addEventListener('scroll', updatePopupPosition, true);
+        chatBox.addEventListener('scroll', updatePopupPosition);
+        setTimeout(() => { document.addEventListener('click', outsideClickHandler); }, 10);
+    }
+
+    // ==========================================
+    // 4. BAŞLANGIÇ VE MESAJ GÖNDERME
+    // ==========================================
+    
+    fetch(`/data/scenarios.json`).then(r => r.json()).then(data => {
+        if(data[scenario]) addMessage("ai", data[scenario].intro);
+    });
+
+    sendBtn.onclick = async () => {
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage("user", text);
+      input.value = "";
+      await sendToConversation(text);
+    };
+    
+    input.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); sendBtn.click(); }
+    });
+
+    async function sendToConversation(text) {
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      const res = await fetch("/conversation", {
+        method: "POST", headers: {"Content-Type": "application/json", 'X-CSRFToken': csrfToken },
+        body: JSON.stringify({ text, scenario })
+      });
+      const data = await res.json();
+      if (data.reply) addMessage("ai", data.reply);
+    }
+
+    // ==========================================
+    // 5. SES KAYIT (MİKROFON) İŞLEMLERİ (SVG UYUMLU)
+    // ==========================================
+    
+    recBtn.addEventListener('click', async () => {
+        // SVG Elementini seç
+        const svgIcon = recBtn.querySelector('svg');
+        
+        if(!isRecording){
+             try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                
+                mediaRecorder.onstop = async () => {
+                    const blob = new Blob(audioChunks, { type: "audio/webm" });
+                    const formData = new FormData();
+                    formData.append("audio", blob, "speech.webm");
+                    
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    input.placeholder = "Ses işleniyor...";
+                    
+                    const resp = await fetch("/upload", { method: "POST", body: formData, headers: { 'X-CSRFToken': csrfToken } });
+                    const data = await resp.json();
+                    
+                    input.placeholder = "Mesajınızı yazın...";
+                    
+                    if(data.transcription) {
+                        addMessage("user", data.transcription);
+                        await sendToConversation(data.transcription);
+                    } else if (data.error) {
+                        showToast("Hata: " + data.error);
+                    }
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                // GÖRSEL GERİ BİLDİRİM (KAYIT BAŞLADI)
+                recBtn.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300');
+                recBtn.classList.add('bg-red-500', 'text-white', 'hover:bg-red-600', 'animate-pulse');
+                
+             } catch(e) { 
+                 showToast('Mikrofon erişimine izin verin.'); 
+                 console.error(e);
+             }
+        } 
+        else {
+            if(mediaRecorder) mediaRecorder.stop();
+            isRecording = false;
+            
+            // GÖRSEL GERİ BİLDİRİM (KAYIT BİTTİ)
+            recBtn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300');
+            recBtn.classList.remove('bg-red-500', 'text-white', 'hover:bg-red-600', 'animate-pulse');
+        }
+    });
+
+    // ==========================================
+    // 6. SESLENDİRME (SVG UYUMLU)
+    // ==========================================
+    function toggleSpeak(text, btn){
+        if(!('speechSynthesis' in window)) return;
+
+        const svg = btn.querySelector('svg');
+
+        if(window.speechSynthesis.speaking) {
+            if (currentSpeakingBtn === btn) {
+                window.speechSynthesis.cancel();
+                resetPlayIcon(btn);
+                currentSpeakingBtn = null;
+                return;
+            } else {
+                window.speechSynthesis.cancel();
+                if(currentSpeakingBtn) resetPlayIcon(currentSpeakingBtn);
+            }
+        }
+
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        
+        if(btn) {
+            // ÇALIYOR EFEKTİ: Mavi yap ve içini doldur
+            btn.classList.remove('text-gray-500', 'dark:text-gray-400');
+            btn.classList.add('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+            svg.setAttribute('fill', 'currentColor');
+            currentSpeakingBtn = btn;
+        }
+
+        u.onend = () => { if(btn) resetPlayIcon(btn); currentSpeakingBtn = null; };
+        u.onerror = () => { if(btn) resetPlayIcon(btn); currentSpeakingBtn = null; };
+
+        window.speechSynthesis.speak(u);
+    }
+
+    function resetPlayIcon(btn) {
+        if(!btn) return;
+        const svg = btn.querySelector('svg');
+        // DURDU EFEKTİ: Normale dön, içini boşalt
+        btn.classList.add('text-gray-500', 'dark:text-gray-400');
+        btn.classList.remove('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        svg.setAttribute('fill', 'none');
+    }
+
+    // Sayfadan ayrılırken sesi durdur
+    window.addEventListener('beforeunload', () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    });
+
+    // Tema (Koyu/Açık) butonu
+    (function(){
+        const themeToggleBtn = document.getElementById('themeToggle');
+        const lightIcon = document.getElementById('themeIconLight');
+        const darkIcon = document.getElementById('themeIconDark');
+
+        function updateThemeIcon(){
+            const isDark = document.documentElement.classList.contains('dark');
+            if(lightIcon && darkIcon){
+                if(isDark){ darkIcon.classList.remove('hidden'); lightIcon.classList.add('hidden'); }
+                else { darkIcon.classList.add('hidden'); lightIcon.classList.remove('hidden'); }
+            }
+        }
+
+        if(themeToggleBtn){
+            updateThemeIcon();
+            themeToggleBtn.addEventListener('click', ()=> {
+                const isDarkNow = document.documentElement.classList.contains('dark');
+                if(isDarkNow){
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+                updateThemeIcon();
+            });
+        }
+    })();
+
+    // ==========================================
+    // 7. LOADER KONTROLÜ
+    // ==========================================
+    const loader = document.getElementById('global-loader');
+    window.addEventListener('beforeunload', function() { if(loader) loader.classList.remove('hidden'); });
+    window.addEventListener('pageshow', function() { if(loader) loader.classList.add('hidden'); });
+    document.querySelectorAll('form').forEach(form => {
+        form.addEventListener('submit', function() { if(loader) loader.classList.remove('hidden'); });
+    });   
+  </script>
+</body>
+</html>

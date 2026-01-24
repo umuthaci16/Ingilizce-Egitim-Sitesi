@@ -1,0 +1,187 @@
+{% extends "layout.html" %}
+
+{% block title %}Profil Ayarları{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto pb-10">
+    
+    <div class="mb-8">
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Profil & Ayarlar</h2>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">Hesap bilgilerinizi ve güvenliğinizi buradan yönetebilirsiniz.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+                <div class="p-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-indigo-600 dark:text-indigo-400">
+                    <i data-lucide="user" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Kişisel Bilgiler</h3>
+            </div>
+
+            <form id="infoForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Kullanıcı Adı</label>
+                    <input type="text" id="name" value="{{ user.name }}" placeholder="{{ username }}" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none text-gray-800 dark:text-white transition">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">E-posta Adresi</label>
+                    <input type="email" value="{{ user.email }}" disabled class="w-full p-3 bg-gray-100 dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-xl text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                    <p class="text-xs text-gray-400 mt-1">E-posta adresi değiştirme şu anlık aktif değil.</p>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-4 h-4"></i> Bilgileri Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
+                <div class="p-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg text-orange-600 dark:text-orange-400">
+                    <i data-lucide="lock" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Güvenlik</h3>
+            </div>
+
+            <form id="passwordForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mevcut Şifre</label>
+                    <div class="relative">
+                        <input type="password" id="current_password" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 dark:text-white transition" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yeni Şifre</label>
+                    <input type="password" id="new_password" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 dark:text-white transition" placeholder="En az 6 karakter">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Yeni Şifre (Tekrar)</label>
+                    <input type="password" id="confirm_password" class="w-full p-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-orange-500 outline-none text-gray-800 dark:text-white transition" placeholder="••••••••">
+                </div>
+
+                <div class="pt-4">
+                    
+                    <button type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-200 dark:shadow-none flex items-center justify-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i> Şifreyi Güncelle
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. İkonları güvenli yenileme fonksiyonu (Hata önleyici)
+    function refreshIcons() {
+        if (window.lucide) {
+            lucide.createIcons();
+        }
+    }
+
+    // İlk açılışta ikonları yükle
+    refreshIcons();
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // Helper: Global Loader'ı Kapatma Fonksiyonu
+    function hideGlobalLoader() {
+        const loader = document.getElementById('global-loader');
+        if (loader) loader.classList.add('hidden');
+    }
+
+    // --- PROFİL BİLGİ GÜNCELLEME ---
+    document.getElementById('infoForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        const originalText = btn.innerHTML;
+        
+        // Butonu kilitle
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Kaydediliyor...';
+        refreshIcons(); // İkonu oluştur
+
+        const name = document.getElementById('name').value;
+
+        try {
+            const res = await fetch('/api/profile/update-info', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({ name })
+            });
+            const data = await res.json();
+            
+            hideGlobalLoader(); // Loader'ı kapat
+
+            if (res.ok) {
+                alert("Başarılı: " + data.message);
+                // Opsiyonel: İsmi sidebar'da da güncellemek için sayfayı yenileyebilirsin
+                // window.location.reload();
+            } else {
+                alert("Hata: " + data.error);
+            }
+        } catch (err) {
+            hideGlobalLoader();
+            alert("Sunucu ile iletişim hatası oluştu.");
+            console.error(err);
+        } finally {
+            // Her durumda butonu eski haline getir
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            hideGlobalLoader();
+            refreshIcons(); // İkonları tekrar oluştur
+        }
+    });
+
+    // --- ŞİFRE GÜNCELLEME ---
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        const originalText = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin mr-2"></i> Kontrol Ediliyor...';
+        refreshIcons();
+
+        const current_password = document.getElementById('current_password').value;
+        const new_password = document.getElementById('new_password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+
+        try {
+            const res = await fetch('/api/profile/change-password', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                body: JSON.stringify({ current_password, new_password, confirm_password })
+            });
+            const data = await res.json();
+            
+            hideGlobalLoader();
+
+            if (res.ok) {
+                alert("Başarılı: " + data.message);
+                e.target.reset(); // Formu temizle
+            } else {
+                alert("Hata: " + data.error);
+            }
+        } catch (err) {
+            hideGlobalLoader();
+            alert("Sunucu ile iletişim hatası oluştu.");
+            console.error(err);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            hideGlobalLoader();
+            refreshIcons();
+        }
+    });
+</script>
+{% endblock %}

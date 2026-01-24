@@ -1,0 +1,576 @@
+{% extends "layout.html" %}
+
+{% block title %}İngilizce Öğren{% endblock %}
+
+{% block content %}
+
+    <div class="flex bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 shadow-sm shrink-0 transition-colors">
+        <button id="tab-chat-btn" class="flex-1 py-4 text-center font-semibold text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400 focus:outline-none transition-colors">
+            Metin Kontrolü
+        </button>
+    
+        <button id="tab-translate-btn" class="flex-1 py-4 text-center font-semibold text-gray-500 dark:text-gray-400 border-b-2 border-transparent hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none transition-colors">
+            Çeviri
+        </button>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-b-xl shadow-xl border border-gray-100 dark:border-gray-700 flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 pb-24 relative min-h-0 transition-colors">
+        
+        <div id="tab-chat" class="tab-pane h-full flex flex-col">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Bir şeyler yazın ve kontrol edin!</h2>
+
+           <div class="w-full max-w-5xl mx-auto mb-8">
+    
+                <input type="text" id="textInput" spellcheck="false" placeholder="Kontrol etmek istediğiniz cümleyi yazın..." 
+                    class="w-full pl-6 py-4 text-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-white rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm outline-none transition placeholder-gray-400 dark:placeholder-gray-500">
+    
+                <div class="flex justify-end items-center gap-3 mt-3 px-1">
+        
+                    <button id="micToggle" class="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition border border-transparent shadow-sm group" title="Sesli giriş" aria-pressed="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 group-hover:text-gray-800 dark:group-hover:text-white">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                        </svg>
+                    </button>
+
+                    <button id="submitText" type="button" class="p-3 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition transform active:scale-95 flex items-center justify-center" title="Gönder" aria-label="Send">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 ml-0.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                        </svg>
+                    </button>
+        
+                </div>
+            </div>
+
+            <div id="transcriptionArea" class="hidden bg-gray-50 dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-700 wrap-break-word transition-colors text-gray-800 dark:text-gray-200"></div>
+                
+        </div>
+    
+        <div id="tab-translate" class="tab-pane hidden h-full flex-col">
+            
+            <div class="flex flex-col md:flex-row gap-6 items-start flex-1 overflow-y-auto pb-18 md:pb-10 px-1">
+                
+                <div class="flex-1 w-full flex flex-col gap-2 relative shrink-0">
+                    <div id="leftLabel" class="font-semibold text-gray-600 dark:text-gray-300 ml-1 shrink-0">English</div>
+                    
+                    <textarea id="translateInput" spellcheck="false"
+                        class="flex-none w-full p-4 h-80 md:h-[250px] border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none outline-none shadow-sm text-lg leading-relaxed transition-colors placeholder-gray-400 dark:placeholder-gray-500" 
+                        placeholder="Çevirilecek metni buraya yazın"></textarea>
+                    
+                    <div id="spellSuggestion" class="hidden shrink-0 mt-1 p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-200 border border-indigo-100 dark:border-indigo-800 rounded-lg cursor-pointer hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition items-center gap-2 text-sm shadow-sm">
+                        <span class="font-bold text-indigo-600 dark:text-indigo-400"></span>
+                        <span id="suggestionText" class="font-medium decoration-dotted text-indigo-700 dark:text-indigo-300"></span>
+                    </div>
+
+                    <div class="flex gap-2 mt-1 shrink-0">
+                        <button id="doTranslate" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-lg font-medium transition shadow-sm">Çevir</button>
+                        <button id="clearTranslate" class="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">Temizle</button>
+                    </div>
+                </div>
+
+                <div class="shrink-0 self-center md:pt-1">
+                    <button id="swapDirection" class="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 transition shadow-sm transform rotate-90 md:rotate-0 border border-gray-200 dark:border-gray-600" title="Dilleri değiştir">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 w-full flex flex-col gap-2 shrink-0">
+                    <div id="rightLabel" class="font-semibold text-gray-600 dark:text-gray-300 ml-1 shrink-0">Türkçe</div>
+                    
+                    <textarea id="translateResult" 
+                        class="flex-none w-full p-4 h-80 md:h-[250px] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-800 dark:text-white resize-none outline-none text-lg leading-relaxed transition-colors" 
+                        readonly></textarea>
+
+                    <div class="flex justify-end mt-2 shrink-0 h-12 items-center">
+                        <button id="playTranslateBtn" class="hidden w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 hover:bg-indigo-200 dark:hover:bg-indigo-900/80 text-indigo-600 dark:text-indigo-400 rounded-full items-center justify-center transition shadow-sm border border-indigo-200 dark:border-indigo-800" title="Dinle">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<style>
+    /* Javascript ile eklenen stiller - Dark Mode Destekli */
+    .error { text-decoration: none; text-decoration-color: #EF4444; text-decoration-thickness: 2px; background-color: #FEF2F2; color: #B91C1C; padding: 0 2px; border-radius: 2px; cursor: help; }
+    .dark .error { background-color: #7F1D1D; color: #FECACA; text-decoration-color: #F87171; }
+
+    .corrected-text { color: #059669; font-weight: 600; }
+    .dark .corrected-text { color: #34D399; }
+
+    .correction-box { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; }
+    .dark .correction-box { border-top-color: #374151; }
+    
+    /* Mic Toggle Active State Override */
+    .mic-toggle-btn.active { background-color: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+    .dark .mic-toggle-btn.active { background-color: #7F1D1D; color: #FECACA; border-color: #991B1B; }
+    
+    /* Tab Stilleri */
+    .tab-btn.active { color: #4F46E5; border-bottom-color: #4F46E5; }
+    .dark .tab-btn.active { color: #818CF8; border-bottom-color: #818CF8; }
+
+    .tab-btn:not(.active) { color: #6B7280; border-bottom-color: transparent; }
+    .dark .tab-btn:not(.active) { color: #9CA3AF; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ==========================================
+// 1. GLOBAL DEĞİŞKENLER
+// ==========================================
+let mediaRecorder;
+let audioChunks = [];
+const transcriptionContainer = document.getElementById('transcriptionArea');
+let currentPlayButton = null;
+
+// ==========================================
+// 2. YARDIMCI FONKSİYONLAR
+// ==========================================
+
+function showTranscriptionText(txt){
+    if(!transcriptionContainer) return;
+    transcriptionContainer.style.display = 'block';
+    transcriptionContainer.classList.remove('hidden');
+    transcriptionContainer.textContent = txt;
+    // Dark mode text color handled by tailwind classes on HTML element
+}
+
+// ==========================================
+// 3. GRAMER KONTROLÜ (TAB 1)
+// ==========================================
+
+document.getElementById("submitText").onclick = async () => {
+    const text = document.getElementById("textInput").value.trim();
+    if (!text) return;
+    
+    showTranscriptionText("Kontrol ediliyor...");
+
+    const grammarData = await checkGrammar(text);
+
+    if (grammarData.error) {
+        const container = document.getElementById('transcriptionArea');
+        container.style.display = 'block';
+        container.classList.remove('hidden');
+        container.innerHTML = `<div class="text-red-600 dark:text-red-400 font-bold p-4 bg-red-50 dark:bg-red-900/30 rounded-lg border border-red-200 dark:border-red-800">⚠️ Hata: ${grammarData.error}</div>`;
+        return;
+    }
+
+    showHighlightedText(grammarData);
+};
+
+const micToggle = document.getElementById('micToggle');
+let isRecording = false;
+
+micToggle.addEventListener('click', async () => {
+    // SVG ve Button Elementlerini Seç
+    const svgIcon = micToggle.querySelector('svg');
+
+    if (!isRecording) {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                const formData = new FormData();
+                formData.append('audio', blob, 'recording.webm');
+                showTranscriptionText('Ses inceleniyor, bu işlem biraz zaman alabilir...');
+
+                try {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                    const resp = await fetch('/upload', { method: 'POST', body: formData, headers: { 'X-CSRFToken': csrfToken } });
+                    const data = await resp.json();
+                    if (data.transcription) {
+                        const grammarData = await checkGrammar(data.transcription);
+                        showHighlightedText(grammarData);
+                    }
+                } catch (err) {
+                    console.error('Upload failed', err);
+                    showTranscriptionText('Transcription failed');
+                }
+                
+                // Kayıt bittiğinde (Otomatik durursa) UI'ı resetle
+                if(isRecording) toggleMicUI(false);
+            };
+            
+            mediaRecorder.start();
+            isRecording = true;
+            toggleMicUI(true); // UI: Kayıt Başladı
+            showTranscriptionText('Dinleniyor...');
+            
+        } catch (err) {
+            console.error('Microphone access denied', err);
+            alert("Mikrofona erişim izni verilmedi.");
+        }
+    } else {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+        }
+        isRecording = false;
+        toggleMicUI(false); // UI: Kayıt Bitti
+    }
+});
+
+function toggleMicUI(recording) {
+    if (recording) {
+        micToggle.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300');
+        micToggle.classList.add('bg-red-500', 'text-white', 'hover:bg-red-600', 'animate-pulse');
+    } else {
+        micToggle.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-600', 'dark:text-gray-300');
+        micToggle.classList.remove('bg-red-500', 'text-white', 'hover:bg-red-600', 'animate-pulse');
+    }
+}
+
+async function checkGrammar(text) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const resp = await fetch('/check-grammar', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken 
+        },
+        body: JSON.stringify({ text })
+    });
+    return await resp.json();
+}
+
+function showHighlightedText(grammarData) {
+    const container = document.getElementById('transcriptionArea');
+    if(!container) return;
+    
+    container.innerHTML = '';
+    container.style.display = 'block';
+    container.classList.remove('hidden');
+
+    // Orijinal Metin
+    let html = grammarData.original;
+    if (grammarData.errors && grammarData.errors.length) {
+        grammarData.errors.reverse().forEach(err => {
+            const before = html.slice(0, err.offset);
+            const wrong = html.slice(err.offset, err.offset + err.length);
+            const after = html.slice(err.offset + err.length);
+            html = `${before}<span class="error" title="${err.message}">${wrong}</span>${after}`;
+        });
+    }
+    
+    const originalRow = document.createElement('div');
+    originalRow.className = 'text-lg leading-relaxed text-gray-800 dark:text-gray-200 mb-4';
+    originalRow.innerHTML = html;
+    container.appendChild(originalRow);
+
+    // Düzeltilmiş Metin
+    const correctedText = (grammarData.corrected && grammarData.corrected.trim()) ? grammarData.corrected : (grammarData.original || '');
+    const hadErrors = Array.isArray(grammarData.errors) && grammarData.errors.length > 0;
+
+    if (correctedText) {
+        const correctionWrapper = document.createElement('div');
+        correctionWrapper.className = 'correction-box flex flex-col gap-2';
+
+        const contentRow = document.createElement('div');
+        contentRow.className = 'flex items-start justify-between gap-4';
+
+        const textDiv = document.createElement('div');
+        textDiv.className = 'flex-1 text-lg font-medium text-green-700 dark:text-green-400'; 
+        if(!hadErrors) textDiv.className = 'flex-1 text-lg text-gray-800 dark:text-gray-200'; 
+        
+        textDiv.textContent = correctedText;
+        contentRow.appendChild(textDiv);
+
+        // PLAY BUTONU (SVG)
+        const playBtn = document.createElement('button');
+        playBtn.className = 'p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition text-gray-500 dark:text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400';
+        playBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+            </svg>`;
+
+        playBtn.onclick = (e) => {
+            e.stopPropagation();
+            toggleSpeakForLocale(correctedText, 'en', playBtn);
+        };
+
+        contentRow.appendChild(playBtn);
+        correctionWrapper.appendChild(contentRow);
+
+        const trDiv = document.createElement('div');
+        trDiv.className = 'text-gray-500 dark:text-gray-400 italic text-sm mt-1';
+        trDiv.textContent = 'Çeviri yükleniyor...';
+        correctionWrapper.appendChild(trDiv);
+
+        container.appendChild(correctionWrapper);
+
+        // Otomatik Oynat
+        setTimeout(() => {
+            speakTextForLocale(correctedText, 'en', playBtn);
+        }, 100);
+
+        // Çevirisini Getir
+        (async ()=>{
+            try{
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                const resp = await fetch('/translate_word', {
+                    method: 'POST',
+                    headers: {'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+                    body: JSON.stringify({ word: correctedText || '', source: 'en', target: 'tr' })
+                });
+                const j = await resp.json();
+                let translated = '';
+                if(j){
+                    if(j.translatedText) translated = j.translatedText;
+                    else if(Array.isArray(j.alternatives) && j.alternatives.length) translated = j.alternatives[0];
+                }
+                trDiv.textContent = translated || 'Çeviri bulunamadı';
+            }catch(err){
+                trDiv.textContent = 'Çeviri alınamadı';
+            }
+        })();
+    }
+}
+
+
+// ==========================================
+// 4. TTS (TEXT-TO-SPEECH) MANTIĞI
+// ==========================================
+const speechLocale = { en: 'en-US', tr: 'tr-TR' };
+
+function speakTextForLocale(text, langCode, btn){
+    if(!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    resetCurrentButton();
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = speechLocale[langCode] || 'en-US';
+    u.rate = 0.95;
+
+    if(btn) {
+        currentPlayButton = btn;
+        // Çalıyor Efekti (SVG için)
+        btn.classList.add('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        const svg = btn.querySelector('svg');
+        if(svg) svg.setAttribute('fill', 'currentColor');
+    }
+
+    u.onend = () => resetCurrentButton();
+    u.onerror = () => resetCurrentButton();
+    window.speechSynthesis.speak(u);
+}
+
+function toggleSpeakForLocale(text, langCode, btn){
+    if(window.speechSynthesis.speaking){
+        window.speechSynthesis.cancel();
+        
+        // Eğer zaten bu buton çalıyorsa durdurduk, resetleyelim
+        if(currentPlayButton === btn) {
+            resetCurrentButton();
+            return;
+        } 
+        // Başka bir şey çalıyordu, onu resetle, yenisini çal
+        else {
+            resetCurrentButton();
+            setTimeout(() => speakTextForLocale(text, langCode, btn), 50);
+        }
+    } else {
+        speakTextForLocale(text, langCode, btn);
+    }
+}
+
+function resetCurrentButton() {
+    if (currentPlayButton) {
+        // Reset Stilleri
+        currentPlayButton.classList.remove('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+        const svg = currentPlayButton.querySelector('svg');
+        if(svg) svg.setAttribute('fill', 'none');
+        
+        currentPlayButton = null;
+    }
+}
+
+function stopAllSpeech() {
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+    }
+    resetCurrentButton();
+}
+
+// ==========================================
+// 5. TAB YÖNETİMİ
+// ==========================================
+const tabChatBtn = document.getElementById('tab-chat-btn');
+const tabTranslateBtn = document.getElementById('tab-translate-btn');
+const tabChat = document.getElementById('tab-chat');
+const tabTranslate = document.getElementById('tab-translate');
+
+function updateTabUI(activeBtn, inactiveBtn) {
+    activeBtn.classList.add('text-indigo-600', 'dark:text-indigo-400', 'border-indigo-600', 'dark:border-indigo-400');
+    activeBtn.classList.remove('text-gray-500', 'dark:text-gray-400', 'border-transparent');
+
+    inactiveBtn.classList.remove('text-indigo-600', 'dark:text-indigo-400', 'border-indigo-600', 'dark:border-indigo-400');
+    inactiveBtn.classList.add('text-gray-500', 'dark:text-gray-400', 'border-transparent');
+}
+
+tabChatBtn.addEventListener('click', () => {
+    stopAllSpeech();
+    updateTabUI(tabChatBtn, tabTranslateBtn);
+    
+    tabChat.style.display = 'flex';
+    tabChat.classList.remove('hidden');
+    tabTranslate.style.display = 'none';
+    tabTranslate.classList.add('hidden');
+});
+
+tabTranslateBtn.addEventListener('click', () => {
+    stopAllSpeech();
+    updateTabUI(tabTranslateBtn, tabChatBtn);
+
+    tabChat.style.display = 'none';
+    tabChat.classList.add('hidden');
+    tabTranslate.style.display = 'block'; 
+    tabTranslate.classList.remove('hidden');
+});
+
+
+// ==========================================
+// 6. ÇEVİRİ VE ÖNERİ (TAB 2)
+// ==========================================
+let direction = 'en-tr';
+const swapBtn = document.getElementById('swapDirection');
+const doTranslateBtn = document.getElementById('doTranslate');
+const clearTranslateBtn = document.getElementById('clearTranslate');
+const translateInput = document.getElementById('translateInput');
+const translateResult = document.getElementById('translateResult');
+const leftLabel = document.getElementById('leftLabel');
+const rightLabel = document.getElementById('rightLabel');
+const playTranslateBtn = document.getElementById('playTranslateBtn');
+const spellSuggestion = document.getElementById('spellSuggestion');
+const suggestionText = document.getElementById('suggestionText');
+let suggestionTimer = null;
+
+const languageName = { en: 'English', tr: 'Türkçe' };
+
+function renderDirection(){
+    const parts = direction.split('-');
+    leftLabel.textContent = languageName[parts[0]] || parts[0];
+    rightLabel.textContent = languageName[parts[1]] || parts[1];
+}
+
+swapBtn.addEventListener('click', ()=>{
+    direction = (direction === 'en-tr') ? 'tr-en' : 'en-tr';
+    renderDirection();
+});
+
+// Spell Suggestion
+translateInput.addEventListener('input', function() {
+    const text = translateInput.value.trim();
+    if (text.length < 3) {
+        spellSuggestion.classList.add('hidden');
+        return;
+    }
+
+    clearTimeout(suggestionTimer);
+    suggestionTimer = setTimeout(async () => {
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            const resp = await fetch('/check-grammar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ text: text })
+            });
+            const data = await resp.json();
+
+            if (data.corrected && data.corrected.trim().toLowerCase() !== text.toLowerCase()) {
+                suggestionText.textContent = data.corrected;
+                spellSuggestion.classList.remove('hidden');
+                
+                spellSuggestion.onclick = () => {
+                    translateInput.value = data.corrected;
+                    spellSuggestion.classList.add('hidden');
+                    doTranslateBtn.click();
+                };
+            } else {
+                spellSuggestion.classList.add('hidden');
+            }
+        } catch (e) {
+            console.warn('Suggestion check failed', e);
+        }
+    }, 800);
+});
+
+// Translate Button
+doTranslateBtn.addEventListener('click', async ()=>{
+    const text = translateInput.value.trim();
+    if(!text) return;
+    translateResult.value = 'Çeviriliyor...';
+    
+    playTranslateBtn.classList.add('hidden');
+    playTranslateBtn.classList.remove('flex');
+
+    const parts = direction.split('-');
+    try{
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const resp = await fetch('/translate_word', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({ word: text, source: parts[0], target: parts[1] })
+        });
+        const j = await resp.json();
+        if(j && j.ok){
+            let out = j.translatedText || '';
+            if(j.alternatives && j.alternatives.length > 0) {
+                 out += '\n' + j.alternatives.slice(0,5).map(a=>'- '+a).join('\n');
+            }
+            translateResult.value = out;
+            
+            playTranslateBtn.dataset.text = j.translatedText;
+            playTranslateBtn.dataset.lang = parts[1];
+            playTranslateBtn.classList.remove('hidden');
+            playTranslateBtn.classList.add('flex'); 
+            
+            // İkon Reset
+            const svg = playTranslateBtn.querySelector('svg');
+            if(svg) svg.setAttribute('fill', 'none');
+
+        } else {
+            translateResult.value = 'Hata';
+        }
+    }catch(e){
+        translateResult.value = 'Hata: ' + e.message;
+    }
+});
+
+translateInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        doTranslateBtn.click();
+    }
+});
+
+clearTranslateBtn.addEventListener('click', ()=>{ 
+    translateInput.value = ''; 
+    translateResult.value = ''; 
+    playTranslateBtn.classList.add('hidden');
+    playTranslateBtn.classList.remove('flex');
+    spellSuggestion.classList.add('hidden');
+});
+
+playTranslateBtn.addEventListener('click', ()=>{
+    const t = playTranslateBtn.dataset.text || '';
+    const lang = playTranslateBtn.dataset.lang || (direction.split('-')[1]);
+    toggleSpeakForLocale(t, lang, playTranslateBtn);
+});
+
+// Sayfadan ayrılırken sesi kes
+window.addEventListener('beforeunload', () => {
+    stopAllSpeech();
+});
+
+// Initial Render
+renderDirection();
+</script>
+{% endblock %}

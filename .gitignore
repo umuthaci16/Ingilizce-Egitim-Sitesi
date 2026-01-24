@@ -1,0 +1,8 @@
+# Ignore environment files containing secrets
+.env
+
+# Python cache
+__pycache__/
+
+# uploads (media files)
+uploads/

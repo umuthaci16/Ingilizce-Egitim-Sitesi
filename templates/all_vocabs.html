@@ -1,0 +1,217 @@
+{% extends "layout.html" %}
+
+{% block title %}Sözlük | {{ selected_letter }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto mt-6 px-4 pb-12">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+        <div>
+            <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Sözlük</h2>
+            <p class="text-gray-500 dark:text-gray-400 mt-1 text-sm">
+                '{{ selected_letter }}' harfi ile başlayan {{ vocabs|length }} kelime listeleniyor.
+            </p>
+        </div>
+        <a href="{{url_for('main.vocab_practice')}}" class="group flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg font-medium">
+            <svg class="w-5 h-5 group-hover:-rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            Kartlarla Çalış
+        </a>
+    </div>
+
+    <div class="mb-6">
+        <div class="relative group">
+            <input type="text" id="searchInput" placeholder="'{{ selected_letter }}' harfi içinde ara..." 
+                   class="w-full p-4 pl-12 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm placeholder-gray-400 dark:placeholder-gray-500">
+            <div class="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-500 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-8">
+        <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+            {% for letter in alphabet %}
+            <a href="{{ url_for('main.all_vocabs_page', letter=letter) }}" 
+               class="flex items-center justify-center w-10 h-10 rounded-lg text-sm font-bold transition-all duration-200 border
+               {% if letter == selected_letter %}
+                   bg-indigo-600 text-white border-indigo-600 shadow-md transform scale-110 ring-2 ring-indigo-200 dark:ring-indigo-900
+               {% else %}
+                   bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-indigo-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700
+               {% endif %}">
+               {{ letter }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if not vocabs %}
+        <div class="flex flex-col items-center justify-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 text-center mx-auto max-w-2xl">
+            <div class="w-20 h-20 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                <span class="text-3xl font-bold">{{ selected_letter }}</span>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Kelime Bulunamadı</h3>
+            <p class="text-gray-500 dark:text-gray-400">Veritabanında "{{ selected_letter }}" harfi ile başlayan kayıtlı kelime yok.</p>
+        </div>
+    {% else %}
+        <div id="all-vocabs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for v in vocabs %}
+              <div class="vocab-card bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-indigo-200 dark:hover:border-indigo-900 transition flex flex-col h-full group relative overflow-hidden">
+                
+                <div class="flex justify-between items-start border-b border-gray-100 dark:border-gray-700 pb-3 mb-4">
+                  <div class="flex items-center gap-3">
+                      <div class="text-2xl font-black text-gray-900 dark:text-white vocab-word tracking-tight">{{ v.word }}</div>
+                      
+                      <button class="speak-btn w-8 h-8 flex items-center justify-center bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-full transition cursor-pointer text-indigo-600 dark:text-indigo-400 flex-shrink-0" 
+                              data-word="{{ v.word }}" 
+                              title="Telaffuz">
+                          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 transition-colors">
+                              <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                          </svg>
+                      </button>
+                  </div>
+
+                  <div class="flex flex-wrap gap-1 justify-end">
+                      {% if v.word_types and v.word_types|length > 0 %}
+                          <span class="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-md tracking-wider border border-gray-200 dark:border-gray-600">{{ v.word_types[0] }}</span>
+                      {% endif %}
+                      {% if v.levels and v.levels|length > 0 %}
+                          <span class="text-[10px] uppercase font-bold text-white bg-indigo-600 px-2 py-0.5 rounded-md shadow-sm">{{ v.levels[0] }}</span>
+                      {% endif %}
+                  </div>
+                </div>
+                
+                <div class="space-y-4 flex-1">
+                  <div>
+                    <strong class="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mb-2 font-bold opacity-80">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        Anlamlar
+                    </strong>
+                    <ul class="text-gray-700 dark:text-gray-300 text-sm space-y-1.5">
+                      {% for m in v.meanings %}
+                        <li class="flex items-start vocab-meaning group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                            <span class="text-indigo-300 dark:text-gray-600 mr-2 mt-1">•</span> {{ m }}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  
+                  {% if v.examples %}
+                  <div class="pt-3 border-t border-gray-50 dark:border-gray-700/50 mt-auto">
+                    <strong class="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-emerald-600 dark:text-emerald-500 mb-2 font-bold opacity-80">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>
+                        Örnekler
+                    </strong>
+                    <ul class="text-gray-500 dark:text-gray-400 text-sm italic space-y-2">
+                      {% for e in v.examples %}
+                        <li class="pl-3 border-l-2 border-emerald-100 dark:border-emerald-900/30 text-xs leading-relaxed">"{{ e }}"</li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+        </div>
+        
+        <div id="no-results" class="hidden py-12 text-center bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 mt-6">
+             <div class="w-16 h-16 bg-gray-100 dark:bg-gray-700 mx-auto rounded-full flex items-center justify-center mb-3">
+                <svg class="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+             </div>
+             <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">Bu sayfada aradığınız kelime bulunamadı.</p>
+             <p class="text-gray-400 text-sm mt-1">Diğer harfleri kontrol etmeyi deneyin.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // --- 1. CLIENT-SIDE ARAMA (Sadece Seçili Harf İçinde) ---
+    const searchInput = document.getElementById('searchInput');
+    const vocabCards = document.querySelectorAll('.vocab-card');
+    const noResultsMsg = document.getElementById('no-results');
+
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const query = e.target.value.toLowerCase().trim();
+            let hasResults = false;
+
+            vocabCards.forEach(card => {
+                // Kartın içindeki metinleri al
+                const textContent = card.innerText.toLowerCase();
+                
+                if (textContent.includes(query)) {
+                    card.style.display = ''; // Göster (flex veya block, varsayılan neyse)
+                    hasResults = true;
+                } else {
+                    card.style.display = 'none'; // Gizle
+                }
+            });
+
+            if (noResultsMsg) {
+                if (hasResults) {
+                    noResultsMsg.classList.add('hidden');
+                } else {
+                    noResultsMsg.classList.remove('hidden');
+                }
+            }
+        });
+    }
+
+    // --- 2. SESLENDİRME (TTS) ---
+    let currentBtn = null; 
+
+    document.querySelectorAll('.speak-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const word = this.dataset.word;
+            toggleSpeakCard(word, this);
+        });
+    });
+
+    function toggleSpeakCard(text, btn) {
+        if (!('speechSynthesis' in window)) return;
+
+        const svg = btn.querySelector('svg');
+
+        if (window.speechSynthesis.speaking) {
+            if (currentBtn === btn) {
+                window.speechSynthesis.cancel();
+                resetIcon(btn);
+                currentBtn = null;
+                return;
+            } 
+            else {
+                window.speechSynthesis.cancel();
+                if (currentBtn) resetIcon(currentBtn);
+            }
+        }
+
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'en-US';
+        u.rate = 0.9; 
+
+        // Oynatılıyor Efekti (Aktif Buton)
+        btn.classList.add('bg-indigo-600', 'text-white', 'scale-110', 'ring-2', 'ring-indigo-300', 'dark:ring-indigo-700');
+        btn.classList.remove('bg-indigo-50', 'dark:bg-indigo-900/30', 'text-indigo-600', 'dark:text-indigo-400');
+        
+        currentBtn = btn;
+
+        u.onend = () => { resetIcon(btn); currentBtn = null; };
+        u.onerror = () => { resetIcon(btn); currentBtn = null; };
+
+        window.speechSynthesis.speak(u);
+    }
+
+    function resetIcon(btn) {
+        // Reset Efekti (Pasif Buton)
+        btn.classList.remove('bg-indigo-600', 'text-white', 'scale-110', 'ring-2', 'ring-indigo-300', 'dark:ring-indigo-700');
+        btn.classList.add('bg-indigo-50', 'dark:bg-indigo-900/30', 'text-indigo-600', 'dark:text-indigo-400');
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+    });
+</script>
+{% endblock %}

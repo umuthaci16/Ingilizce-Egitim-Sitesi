@@ -1,0 +1,6 @@
+flask
+openai-whisper
+torch
+ffmpeg-python
+python-dotenv
+mysql-connector-python

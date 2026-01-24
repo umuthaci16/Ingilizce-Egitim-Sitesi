@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İngilizce Seviye Tespit Sınavı</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hidden { display: none; }
+        .active-step { border-bottom: 3px solid #4f46e5; color: #4f46e5; font-weight: 700; }
+        .inactive-step { border-bottom: 3px solid transparent; color: #9ca3af; font-weight: 500; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        input[type="radio"]:checked + span { color: #4f46e5; font-weight: 600; }
+        .option-label:hover { background-color: #f9fafb; }
+
+        /* Dark Mode Override for Custom CSS */
+        html.dark .active-step { border-bottom-color: #818cf8; color: #818cf8; }
+        html.dark .inactive-step { color: #6b7280; }
+        html.dark input[type="radio"]:checked + span { color: #818cf8; }
+        html.dark .option-label:hover { background-color: #1f2937; } /* gray-800 */
+
+        /* Dark Mode İkon Kontrolü */
+        #theme-icon-sun { display: none; }
+        #theme-icon-moon { display: block; }
+
+        html.dark #theme-icon-sun { display: block; }
+        html.dark #theme-icon-moon { display: none; }
+    </style>
+    <script>
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-950 text-gray-800 dark:text-gray-200 min-h-screen flex flex-col items-center py-8 transition-colors duration-300">
+
+    <button id="theme-toggle" onclick="toggleTheme()" class="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-lg hover:scale-110 transition-transform cursor-pointer flex items-center justify-center">
+        <i id="theme-icon-sun" data-lucide="sun" class="w-6 h-6 text-white"></i>
+        <i id="theme-icon-moon" data-lucide="moon" class="w-6 h-6 text-gray-700 dark:text-gray-200"></i>
+    </button>
+
+    <div class="w-full max-w-6xl bg-white dark:bg-gray-900 shadow-sm rounded-xl mb-6 px-8 py-4 flex justify-between items-center text-sm md:text-base border border-gray-100 dark:border-gray-800 transition-colors">
+        <div id="prog-read" class="active-step pb-2 px-6 cursor-default transition-all">Reading</div>
+        <div id="prog-listen" class="inactive-step pb-2 px-6 cursor-default transition-all">Listening</div>
+        <div id="prog-write" class="inactive-step pb-2 px-6 cursor-default transition-all">Writing</div>
+        <div id="prog-speak" class="inactive-step pb-2 px-6 cursor-default transition-all">Speaking</div>
+    </div>
+
+    <div class="w-full max-w-6xl bg-white dark:bg-gray-900 shadow-xl rounded-2xl overflow-hidden min-h-[700px] flex flex-col relative border border-gray-100 dark:border-gray-800 transition-colors">
+        
+        <div id="loader" class="hidden absolute inset-0 bg-white/95 dark:bg-gray-900/95 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+            <div class="animate-spin rounded-full h-14 w-14 border-[5px] border-indigo-600 dark:border-indigo-500 border-t-transparent"></div>
+            <p class="mt-4 text-indigo-600 dark:text-indigo-400 font-semibold text-lg animate-pulse" id="loader-text">Sınav Yükleniyor...</p>
+        </div>
+
+        <div id="step-reading" class="p-8 md:p-12 fade-in h-full flex flex-col">
+            <div class="mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Reading Section</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">Metni dikkatlice okuyun ve ilgili soruları cevaplayın.</p>
+            </div>
+            
+            <div id="reading-content-area" class="flex-grow space-y-10">
+            </div>
+
+            <div class="mt-12 flex justify-end border-t border-gray-100 dark:border-gray-800 pt-6">
+                <button onclick="nextReadingStep()" class="px-10 py-3 bg-indigo-600 dark:bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 dark:hover:bg-indigo-500 transition flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none">
+                    Sonraki Bölüm <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="step-listening" class="hidden p-8 md:p-12 fade-in h-full flex flex-col">
+            <div class="mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Listening Section</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">Sesi dinleyin ve soruları cevaplayın.</p>
+            </div>
+
+            <div id="audio-player-ui" class="bg-indigo-50 dark:bg-gray-800 p-6 rounded-2xl border border-indigo-100 dark:border-gray-700 mb-10 flex flex-col md:flex-row items-center justify-between gap-6 hidden shadow-sm">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="p-3 bg-white dark:bg-gray-700 rounded-full text-indigo-600 dark:text-indigo-400 shadow-sm">
+                        <i data-lucide="headphones" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-indigo-900 dark:text-indigo-300 uppercase tracking-wider">Audio Track</p>
+                        <p id="audio-status-text" class="text-sm text-indigo-500 dark:text-indigo-400 font-medium">Oynatmaya hazır</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4 bg-white dark:bg-gray-700 px-6 py-3 rounded-full shadow-sm border border-indigo-100 dark:border-gray-600">
+                    
+                    <button onclick="ttsRestart()" class="p-2 text-gray-500 dark:text-gray-300 hover:text-red-600 hover:bg-gray-50 dark:hover:bg-gray-600 rounded-full transition flex flex-col items-center" title="Başa Sar">
+                        <i data-lucide="rotate-ccw" class="w-6 h-6"></i>
+                    </button>
+
+                    <div class="h-8 w-px bg-gray-200 dark:bg-gray-500 mx-2"></div>
+
+                    <button id="btn-play-pause" onclick="ttsToggle()" class="w-14 h-14 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:bg-indigo-700 shadow-md transition transform active:scale-95" title="Oynat / Durdur">
+                        <i data-lucide="play" class="w-7 h-7 fill-current ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="listening-content-area" class="flex-grow space-y-10">
+            </div>
+
+            <div class="mt-12 flex justify-end border-t border-gray-100 dark:border-gray-800 pt-6">
+                <button onclick="nextListeningStep()" class="px-10 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none">
+                    Sonraki Bölüm <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="step-writing" class="hidden p-8 md:p-12 fade-in h-full flex flex-col">
+            <div class="mb-8 border-b border-gray-100 dark:border-gray-800 pb-4">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Writing Section</h2>
+                <p class="text-gray-500 dark:text-gray-400 mt-1">İstenen kompozisyonu yazın veya gramer sorularını cevaplayın.</p>
+            </div>
+
+            <div id="writing-content-area" class="flex-grow space-y-8">
+            </div>
+            
+            <div class="mt-12 flex justify-end border-t border-gray-100 dark:border-gray-800 pt-6">
+                <button onclick="nextWritingStep()" class="px-10 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition flex items-center gap-2 shadow-lg shadow-indigo-200 dark:shadow-none">
+                    Sonraki Bölüm <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="step-speaking" class="hidden p-8 md:p-12 fade-in h-full flex flex-col text-center">
+            <div class="mb-8 border-b border-gray-100 dark:border-gray-800 pb-4 text-left">
+                <div class="flex justify-between items-end">
+                    <div>
+                        <h2 class="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">Speaking Section</h2>
+                        <p class="text-gray-500 dark:text-gray-400 mt-1">Soruyu okuyun ve cevabınızı sesli olarak kaydedin.</p>
+                    </div>
+                    <span id="speak-badge" class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs font-bold px-2 py-1 rounded uppercase">Speaking Task</span>
+                </div>
+            </div>
+
+            <div id="speaking-content-area" class="flex-grow flex flex-col items-center justify-center max-w-3xl mx-auto w-full">
+                <div class="bg-gradient-to-br from-green-50 to-white dark:from-green-900/20 dark:to-gray-800 p-8 rounded-3xl border border-green-100 dark:border-green-900/50 mb-10 w-full text-left shadow-sm">
+                    <h3 id="speak-topic" class="text-2xl font-bold text-gray-900 dark:text-white mb-4 leading-tight">Topic</h3>
+                    <p id="speak-inst" class="text-gray-700 dark:text-gray-300 whitespace-pre-line text-lg leading-relaxed"></p>
+                </div>
+
+                <div class="flex flex-col items-center justify-center w-full">
+                    <div class="relative group">
+                         <span id="mic-pulse" class="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-75 hidden"></span>
+                        <button id="mic-btn" onclick="toggleRecording()" class="relative w-24 h-24 bg-indigo-600 rounded-full text-white shadow-xl shadow-indigo-200 dark:shadow-none flex items-center justify-center hover:bg-indigo-700 transition transform group-hover:scale-105 active:scale-95 z-10">
+                            <i data-lucide="mic" id="icon-mic" class="w-10 h-10"></i>
+                            <i data-lucide="square" id="icon-stop" class="w-10 h-10 hidden fill-current"></i>
+                        </button>
+                    </div>
+                    <p id="mic-status" class="mt-6 text-sm font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-5 py-2 rounded-full">Kayda başlamak için mikrofona basın</p>
+
+                    <div id="audio-playback-area" class="hidden w-full mt-8 bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 flex flex-col items-center animate-fade-in">
+                        <p class="text-xs font-bold text-gray-400 dark:text-gray-500 mb-3 uppercase tracking-widest">Kaydınızı Dinleyin</p>
+                        <audio id="audio-player" controls class="w-full mb-4 rounded-lg"></audio>
+                        <button onclick="resetRecording()" class="text-red-500 text-sm font-bold hover:text-red-700 dark:hover:text-red-400 flex items-center gap-2 px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Beğenmedim, Tekrar Kaydet
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-12 flex justify-end border-t border-gray-100 dark:border-gray-800 pt-6">
+                <button id="btn-speak-next" onclick="nextSpeakingStep()" disabled class="px-10 py-3 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 font-bold rounded-xl cursor-not-allowed transition flex items-center gap-2">
+                    Sonraki <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="step-result" class="hidden p-12 text-center fade-in max-w-4xl mx-auto">
+            <div class="w-24 h-24 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+                <i data-lucide="trophy" class="w-12 h-12"></i>
+            </div>
+            <h2 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-3">Sınav Tamamlandı!</h2>
+            <p class="text-gray-500 dark:text-gray-400 mb-12 text-lg">Tüm yetenekleriniz analiz edildi. İşte sonuçlarınız:</p>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
+                <div class="p-8 bg-blue-50 dark:bg-blue-900/20 rounded-3xl border border-blue-100 dark:border-blue-900/50"><div class="text-xs uppercase font-bold text-blue-400 mb-2 tracking-widest">Reading</div><div id="res-read" class="text-5xl font-black text-blue-700 dark:text-blue-400">-</div></div>
+                <div class="p-8 bg-purple-50 dark:bg-purple-900/20 rounded-3xl border border-purple-100 dark:border-purple-900/50"><div class="text-xs uppercase font-bold text-purple-400 mb-2 tracking-widest">Listening</div><div id="res-listen" class="text-5xl font-black text-purple-700 dark:text-purple-400">-</div></div>
+                <div class="p-8 bg-indigo-50 dark:bg-indigo-900/20 rounded-3xl border border-indigo-100 dark:border-indigo-900/50"><div class="text-xs uppercase font-bold text-indigo-400 mb-2 tracking-widest">Writing</div><div id="res-write" class="text-5xl font-black text-indigo-700 dark:text-indigo-400">-</div></div>
+                <div class="p-8 bg-green-50 dark:bg-green-900/20 rounded-3xl border border-green-100 dark:border-green-900/50"><div class="text-xs uppercase font-bold text-green-400 mb-2 tracking-widest">Speaking</div><div id="res-speak" class="text-5xl font-black text-green-700 dark:text-green-400">-</div></div>
+            </div>
+
+            <a href="{{ url_for('main.index') }}" class="inline-block px-12 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold rounded-xl hover:bg-black dark:hover:bg-gray-100 transition shadow-xl text-lg">Ana Sayfaya Dön</a>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DARK MODE TOGGLE LOGIC ---
+        function toggleTheme() {
+        const html = document.documentElement;
+        if (html.classList.contains('dark')) {
+            html.classList.remove('dark');
+            localStorage.theme = 'light';
+        } else {
+            html.classList.add('dark');
+            localStorage.theme = 'dark';
+        }
+        // İkonları tekrar oluşturmaya gerek yok, CSS display özelliğini değiştiriyor.
+        }
+
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        let dataStore = {};
+        let results = {};
+        
+        // Queues
+        let readingQueue = ['A1', 'B1', 'C1'];
+        let currentReadingIndex = 0;
+
+        let listeningQueue = ['Part1', 'A1', 'B1', 'C1'];
+        let currentListeningIndex = 0;
+
+        let writingQueue = ['Task_A1', 'Task_B1', 'Task_C1', 'Gram_A1', 'Gram_B1', 'Gram_C1'];
+        let currentWritingIndex = 0;
+
+        let speakingQueue = ['A1', 'B1', 'C1'];
+        let currentSpeakingIndex = 0;
+        
+        // Audio State
+        window.currentUtterance = null;
+        let isRecording = false;
+        let mediaRecorder;
+        let audioChunks = [];
+        let speakBlobs = { A1: null, B1: null, C1: null };
+
+        // Helper Functions
+        function showLoader(show, text="Yükleniyor...") { 
+            const loader = document.getElementById('loader');
+            const txt = document.getElementById('loader-text');
+            if(loader) {
+                loader.classList.toggle('hidden', !show); 
+                if(txt) txt.innerText = text;
+            }
+        }
+        
+        // --- SIMPLE AUDIO ENGINE (PLAY / STOP ONLY) ---
+        function stopAllAudio() {
+            window.speechSynthesis.cancel();
+            updateAudioUI(false);
+        }
+
+        function ttsPlay(text, isMini) {
+            stopAllAudio(); // Always stop first
+
+            window.currentUtterance = new SpeechSynthesisUtterance(text);
+            window.currentUtterance.lang = 'en-US';
+            window.currentUtterance.rate = 0.9;
+            
+            // Reset UI when done
+            window.currentUtterance.onend = () => { updateAudioUI(false); };
+            
+            // Handle Errors silently
+            window.currentUtterance.onerror = (e) => {
+                if (e.error !== 'interrupted' && e.error !== 'canceled') {
+                    console.error("TTS Error:", e);
+                }
+                updateAudioUI(false);
+            };
+
+            window.speechSynthesis.speak(window.currentUtterance);
+            
+            if(!isMini) updateAudioUI(true);
+        }
+
+        function ttsToggle() {
+            if (!window.currentListeningText) return;
+            if (window.speechSynthesis.speaking) {
+                stopAllAudio(); // If playing, STOP.
+            } else {
+                ttsPlay(window.currentListeningText, false); // If stopped, PLAY from start.
+            }
+        }
+
+        function ttsRestart() {
+            stopAllAudio();
+            setTimeout(() => {
+                if (window.currentListeningText) {
+                    ttsPlay(window.currentListeningText, false);
+                }
+            }, 100);
+        }
+
+        function updateAudioUI(isPlaying) {
+            const btn = document.getElementById('btn-play-pause');
+            const txt = document.getElementById('audio-status-text');
+            if(!btn || !txt) return;
+
+            if (isPlaying) {
+                // STOP MODE (Red Square)
+                btn.innerHTML = '<i data-lucide="square" class="w-6 h-6 fill-current ml-0"></i>';
+                btn.classList.add('bg-red-600', 'hover:bg-red-700', 'ring-4', 'ring-red-200', 'dark:ring-red-900');
+                btn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                
+                txt.innerText = "Okunuyor... (Durdurmak için bas)";
+                txt.className = "text-sm text-indigo-600 dark:text-indigo-400 font-bold animate-pulse";
+            } else {
+                // PLAY MODE (Blue Triangle)
+                btn.innerHTML = '<i data-lucide="play" class="w-7 h-7 fill-current ml-1"></i>';
+                btn.classList.remove('bg-red-600', 'hover:bg-red-700', 'ring-4', 'ring-red-200', 'dark:ring-red-900');
+                btn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                
+                txt.innerText = "Oynatmaya Hazır";
+                txt.className = "text-sm text-gray-500 dark:text-gray-400 font-medium";
+            }
+            if(window.lucide) lucide.createIcons();
+        }
+
+        function setProgress(step) {
+            stopAllAudio();
+            ['read','listen','write','speak'].forEach(s => {
+                const el = document.getElementById('prog-'+s);
+                el.className = (s === step) ? 'active-step pb-2 px-6 cursor-default' : 'inactive-step pb-2 px-6 cursor-default';
+            });
+            document.querySelectorAll('[id^="step-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('step-'+ (step === 'read' ? 'reading' : step === 'listen' ? 'listening' : step === 'write' ? 'writing' : 'speaking')).classList.remove('hidden');
+            window.scrollTo(0,0);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if(window.lucide) lucide.createIcons();
+            loadReadingData();
+        });
+
+        // 1. READING
+        async function loadReadingData() {
+            showLoader(true, "Reading Yükleniyor...");
+            try {
+                const res = await fetch('/api/placement/reading/generate', {method:'POST', headers:{'X-CSRFToken':csrfToken}});
+                dataStore.reading = await res.json();
+                dataStore.readingAnswers = { A1: [], B1: [], C1: [] };
+                renderReadingStep();
+                setProgress('read');
+            } catch(e) { console.error(e); } 
+            finally { showLoader(false); }
+        }
+
+        function renderReadingStep() {
+            const level = readingQueue[currentReadingIndex];
+            const content = dataStore.reading[level];
+            const container = document.getElementById('reading-content-area');
+            container.innerHTML = '';
+            window.scrollTo(0,0);
+
+            container.innerHTML += `
+                <div class="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 text-lg leading-8 font-serif text-gray-800 dark:text-gray-200 shadow-sm transition-colors">
+                    ${content.text.replace(/\n/g, '<br>')}
+                </div>`;
+
+            let qHtml = content.questions.map((q, i) => {
+                let opts = q.options.map((o, oi) => 
+                    `<label class="option-label flex items-start gap-3 cursor-pointer p-4 rounded-lg transition border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                        <input type="radio" name="r_${level}_${i}" value="${oi}" class="mt-1 w-5 h-5 text-indigo-600 focus:ring-indigo-500">
+                        <span class="text-base text-gray-700 dark:text-gray-300">${o}</span>
+                    </label>`
+                ).join('');
+                return `<div class="border-b border-gray-100 dark:border-gray-700 pb-8 last:border-0 last:pb-0">
+                            <p class="font-bold text-gray-900 dark:text-white mb-4 text-lg"><span class="text-indigo-600 dark:text-indigo-400">Q${i+1}.</span> ${q.question}</p>
+                            <div class="space-y-1">${opts}</div>
+                        </div>`;
+            }).join('');
+            container.innerHTML += `<div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-8 transition-colors">${qHtml}</div>`;
+        }
+
+        async function nextReadingStep() {
+            const level = readingQueue[currentReadingIndex];
+            const qCount = dataStore.reading[level].questions.length;
+            let userAns = [];
+            for(let i=0; i<qCount; i++) {
+                const el = document.querySelector(`input[name="r_${level}_${i}"]:checked`);
+                userAns.push(el ? parseInt(el.value) : -1);
+            }
+            dataStore.readingAnswers[level] = userAns;
+            currentReadingIndex++;
+            if (currentReadingIndex < readingQueue.length) renderReadingStep();
+            else await submitReadingAll();
+        }
+
+        async function submitReadingAll() {
+            let correct = {};
+            ['A1','B1','C1'].forEach(l => correct[l] = dataStore.reading[l].questions.map(q=>q.correct_index));
+            showLoader(true, "Cevaplar Kontrol Ediliyor...");
+            const res = await fetch('/api/placement/reading/assess', {
+                method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+                body: JSON.stringify({answers: dataStore.readingAnswers, correct_answers: correct})
+            });
+            results.reading = await res.json();
+            showLoader(false);
+            loadListeningData();
+        }
+
+        // 2. LISTENING
+        async function loadListeningData() {
+            showLoader(true, "Listening Yükleniyor...");
+            try {
+                const res = await fetch('/api/placement/listening/generate', {method:'POST', headers:{'X-CSRFToken':csrfToken}});
+                dataStore.listening = await res.json();
+                dataStore.listenAnsP1 = [];
+                dataStore.listenAnsP2 = { A1:[], B1:[], C1:[] };
+                renderListeningStep();
+                setProgress('listen');
+            } catch(e) { console.error(e); } 
+            finally { showLoader(false); }
+        }
+
+        function renderListeningStep() {
+            stopAllAudio();
+            const step = listeningQueue[currentListeningIndex];
+            const container = document.getElementById('listening-content-area');
+            const audioUI = document.getElementById('audio-player-ui');
+            container.innerHTML = '';
+            window.scrollTo(0,0);
+
+            if (step === 'Part1') {
+                audioUI.classList.add('hidden');
+                const optsHtml = dataStore.listening.part_1.options.map((o,i) => `<option value="${i}">${o}</option>`).join('');
+                dataStore.listening.part_1.clips.forEach(clip => {
+                    container.innerHTML += `
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col md:flex-row items-center gap-6 transition hover:shadow-md">
+                            <div class="flex items-center gap-4 w-full md:w-auto">
+                                <button onclick="ttsPlay('${clip.text.replace(/'/g, "\\'")}', true)" class="w-12 h-12 flex items-center justify-center bg-indigo-50 dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 rounded-full hover:bg-indigo-600 hover:text-white transition shadow-sm">
+                                    <i data-lucide="play" class="w-5 h-5 fill-current"></i>
+                                </button>
+                                <div>
+                                    <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Duyuru ${clip.id}</span>
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">Dinle & Eşleştir</p>
+                                </div>
+                            </div>
+                            <div class="w-full md:w-2/3">
+                                <select name="l_p1_${clip.id}" class="w-full p-3 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <option value="-1">Hangi durum açıklanıyor?</option>
+                                    ${optsHtml}
+                                </select>
+                            </div>
+                        </div>`;
+                });
+                if(window.lucide) lucide.createIcons();
+            } else {
+                audioUI.classList.remove('hidden');
+                const content = dataStore.listening.part_2[step];
+                window.currentListeningText = content.transcript;
+                let qHtml = content.questions.map((q, i) => {
+                    let opts = q.options.map((o, oi) => 
+                        `<label class="option-label flex items-center gap-3 cursor-pointer p-3 rounded-lg transition border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+                            <input type="radio" name="l_p2_${step}_${i}" value="${oi}" class="w-4 h-4 text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">${o}</span>
+                        </label>`
+                    ).join('');
+                    return `<div class="mb-6 border-b border-gray-100 dark:border-gray-700 pb-6 last:border-0 last:pb-0">
+                                <p class="font-bold text-gray-900 dark:text-white mb-3 text-base">${i+1}. ${q.question}</p>
+                                <div class="space-y-1 pl-2">${opts}</div>
+                            </div>`;
+                }).join('');
+                container.innerHTML += `<div class="bg-white dark:bg-gray-800 p-8 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">${qHtml}</div>`;
+            }
+        }
+
+        async function nextListeningStep() {
+            stopAllAudio();
+            const step = listeningQueue[currentListeningIndex];
+            if (step === 'Part1') {
+                const clips = dataStore.listening.part_1.clips;
+                let ans = [];
+                clips.forEach(c => {
+                    const el = document.querySelector(`select[name="l_p1_${c.id}"]`);
+                    ans.push(el ? parseInt(el.value) : -1);
+                });
+                dataStore.listenAnsP1 = ans;
+            } else {
+                const qs = dataStore.listening.part_2[step].questions;
+                let ans = [];
+                qs.forEach((_, i) => {
+                    const el = document.querySelector(`input[name="l_p2_${step}_${i}"]:checked`);
+                    ans.push(el ? parseInt(el.value) : -1);
+                });
+                dataStore.listenAnsP2[step] = ans;
+            }
+            currentListeningIndex++;
+            if (currentListeningIndex < listeningQueue.length) renderListeningStep();
+            else await submitListeningAll();
+        }
+
+        async function submitListeningAll() {
+            let cor1 = []; let cor2 = {};
+            if(dataStore.listening.part_1) cor1 = dataStore.listening.part_1.clips.map(c => c.correct_option_index);
+            ['A1','B1','C1'].forEach(l => { if(dataStore.listening.part_2[l]) cor2[l] = dataStore.listening.part_2[l].questions.map(q=>q.correct_index); });
+            
+            showLoader(true, "Cevaplar Kontrol Ediliyor...");
+            const res = await fetch('/api/placement/listening/assess', {
+                method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+                body: JSON.stringify({ p1_answers: dataStore.listenAnsP1, p1_correct: cor1, p2_answers: dataStore.listenAnsP2, p2_correct: cor2 })
+            });
+            results.listening = await res.json();
+            showLoader(false);
+            loadWritingData();
+        }
+
+        // 3. WRITING
+        async function loadWritingData() {
+            showLoader(true, "Writing Yükleniyor...");
+            try {
+                const res = await fetch('/api/placement/writing/generate', {method:'POST', headers:{'X-CSRFToken':csrfToken}});
+                dataStore.writing = await res.json();
+                dataStore.essays = { A1: "", B1: "", C1: "" };
+                dataStore.grammarAns = { A1: [], B1: [], C1: [] };
+                renderWritingStep();
+                setProgress('write');
+            } catch(e) { console.error(e); } finally { showLoader(false); }
+        }
+
+        function renderWritingStep() {
+            const step = writingQueue[currentWritingIndex];
+            const container = document.getElementById('writing-content-area');
+            const [type, level] = step.split('_');
+            container.innerHTML = '';
+            window.scrollTo(0,0);
+
+            if (type === 'Task') {
+                const task = dataStore.writing.writing_tasks[level];
+                container.innerHTML = `
+                    <div class="bg-indigo-50 dark:bg-gray-800 p-8 rounded-2xl border border-indigo-100 dark:border-gray-700 mb-8 shadow-sm">
+                        <span class="bg-indigo-200 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 text-xs font-bold px-3 py-1 rounded uppercase mb-3 inline-block">Writing Task</span>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-3">${task.topic}</h3>
+                        <p class="text-base text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">${task.instructions}</p>
+                    </div>
+                    <div class="relative">
+                        <textarea id="w_essay_input" class="w-full h-64 p-6 border border-gray-300 dark:border-gray-700 dark:bg-gray-800 rounded-2xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-500 text-gray-800 dark:text-gray-200 text-lg leading-relaxed shadow-sm transition outline-none resize-none" placeholder="Kompozisyonunuzu buraya yazın..."></textarea>
+                    </div>`;
+            } else {
+                const questions = dataStore.writing.grammar_questions[level];
+                let qHtml = questions.map((q, i) => {
+                    let opts = q.options.map((o, oi) => 
+                        `<label class="inline-flex items-center gap-2 mr-6 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded">
+                            <input type="radio" name="w_gram_${i}" value="${oi}" class="text-indigo-600 focus:ring-indigo-500 w-4 h-4"> 
+                            <span class="text-gray-700 dark:text-gray-300 font-medium">${o}</span>
+                        </label>`
+                    ).join('');
+                    return `<div class="bg-white dark:bg-gray-800 p-6 border border-gray-100 dark:border-gray-700 rounded-xl mb-4 shadow-sm">
+                                <p class="font-bold text-gray-900 dark:text-white text-base mb-3"><span class="text-indigo-500 dark:text-indigo-400">${i+1}.</span> ${q.question}</p>
+                                <div class="text-sm">${opts}</div>
+                            </div>`;
+                }).join('');
+                container.innerHTML = `<h3 class="text-xl font-bold text-indigo-900 dark:text-indigo-300 mb-6 px-2">Grammar Questions</h3><div class="bg-gray-50 dark:bg-gray-800/50 p-8 rounded-2xl border border-gray-200 dark:border-gray-700">${qHtml}</div>`;
+            }
+        }
+
+        async function nextWritingStep() {
+            const step = writingQueue[currentWritingIndex];
+            const [type, level] = step.split('_');
+            if (type === 'Task') {
+                dataStore.essays[level] = document.getElementById('w_essay_input').value;
+            } else {
+                const qs = dataStore.writing.grammar_questions[level];
+                let ans = [];
+                qs.forEach((_, i) => {
+                    const el = document.querySelector(`input[name="w_gram_${i}"]:checked`);
+                    ans.push(el ? parseInt(el.value) : -1);
+                });
+                dataStore.grammarAns[level] = ans;
+            }
+            currentWritingIndex++;
+            if (currentWritingIndex < writingQueue.length) renderWritingStep();
+            else await submitWritingAll();
+        }
+
+        async function submitWritingAll() {
+            let gramCor = {};
+            ['A1','B1','C1'].forEach(l => { if(dataStore.writing.grammar_questions[l]) gramCor[l] = dataStore.writing.grammar_questions[l].map(q=>q.correct_index); });
+            showLoader(true, "AI Kompozisyon Analizi Yapıyor...");
+            const res = await fetch('/api/placement/writing/assess', {
+                method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+                body: JSON.stringify({ essays: dataStore.essays, grammar_answers: dataStore.grammarAns, grammar_correct: gramCor })
+            });
+            results.writing = await res.json();
+            showLoader(false);
+            loadSpeakingData();
+        }
+
+        // 4. SPEAKING
+        async function loadSpeakingData() {
+            showLoader(true, "Speaking Yükleniyor...");
+            try {
+                const res = await fetch('/api/placement/speaking/generate', {method:'POST', headers:{'X-CSRFToken':csrfToken}});
+                dataStore.speaking = await res.json();
+                renderSpeakingStep();
+                setProgress('speak');
+            } catch(e) { console.error(e); } finally { showLoader(false); }
+        }
+
+        function renderSpeakingStep() {
+            const level = speakingQueue[currentSpeakingIndex];
+            const content = dataStore.speaking[level];
+            document.getElementById('speak-badge').innerText = "Speaking Task"; // Seviyeyi gizle
+            document.getElementById('speak-topic').innerText = content.topic;
+            document.getElementById('speak-inst').innerText = content.instructions;
+            document.getElementById('audio-playback-area').classList.add('hidden');
+            document.getElementById('mic-status').innerText = "Kayda başlamak için mikrofona basın";
+            const nextBtn = document.getElementById('btn-speak-next');
+            nextBtn.disabled = true;
+            nextBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg');
+            nextBtn.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-400', 'dark:text-gray-500', 'cursor-not-allowed');
+            isRecording = false;
+        }
+
+        function toggleRecording() {
+            const btn = document.getElementById('mic-btn');
+            const iconMic = document.getElementById('icon-mic');
+            const iconStop = document.getElementById('icon-stop');
+            const pulse = document.getElementById('mic-pulse');
+            const status = document.getElementById('mic-status');
+
+            if(!isRecording) {
+                navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                    mediaRecorder.onstop = () => {
+                        const level = speakingQueue[currentSpeakingIndex];
+                        const blob = new Blob(audioChunks, {type:'audio/webm'});
+                        speakBlobs[level] = blob;
+                        
+                        const audioUrl = URL.createObjectURL(blob);
+                        document.getElementById('audio-player').src = audioUrl;
+                        document.getElementById('audio-playback-area').classList.remove('hidden');
+                        
+                        const nextBtn = document.getElementById('btn-speak-next');
+                        nextBtn.disabled = false;
+                        nextBtn.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-400', 'dark:text-gray-500', 'cursor-not-allowed');
+                        nextBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700', 'text-white', 'shadow-lg');
+
+                        btn.classList.remove('bg-red-600'); btn.classList.add('bg-indigo-600');
+                        pulse.classList.add('hidden'); iconMic.classList.remove('hidden'); iconStop.classList.add('hidden');
+                        status.innerText = "Kayıt tamamlandı.";
+                    };
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.remove('bg-indigo-600'); btn.classList.add('bg-red-600');
+                    pulse.classList.remove('hidden'); iconMic.classList.add('hidden'); iconStop.classList.remove('hidden');
+                    status.innerText = "Kaydediliyor...";
+                }).catch(e => alert("Mikrofon hatası: " + e));
+            } else { mediaRecorder.stop(); isRecording = false; }
+        }
+
+        function resetRecording() {
+            document.getElementById('audio-playback-area').classList.add('hidden');
+            document.getElementById('mic-status').innerText = "Yeniden kaydetmek için mikrofona basın";
+            const nextBtn = document.getElementById('btn-speak-next');
+            nextBtn.disabled = true;
+            nextBtn.classList.add('bg-gray-200', 'dark:bg-gray-700');
+            nextBtn.classList.remove('bg-indigo-600', 'text-white');
+        }
+
+        async function nextSpeakingStep() {
+            currentSpeakingIndex++;
+            if (currentSpeakingIndex < speakingQueue.length) renderSpeakingStep();
+            else await submitSpeakingAll();
+        }
+
+        async function submitSpeakingAll() {
+            showLoader(true, "Sesler Azure ile Analiz Ediliyor...");
+            
+            // --- YENİ FORM DATA MANTIĞI ---
+            const formData = new FormData();
+            ['A1', 'B1', 'C1'].forEach(level => {
+                if (speakBlobs[level]) {
+                    // Blob'u dosya olarak ekle: key='A1', filename='A1.webm'
+                    formData.append(level, speakBlobs[level], `${level}.webm`);
+                }
+            });
+
+            // FormData gönderirken 'Content-Type' header'ını EKLEME. Tarayıcı boundary ile kendi ekler.
+            const res = await fetch('/api/placement/speaking/assess', {
+                method:'POST',
+                headers: {'X-CSRFToken': csrfToken}, 
+                body: formData
+            });
+            results.speaking = await res.json();
+            
+            await fetch('/api/placement/save', {
+                method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':csrfToken},
+                body: JSON.stringify({
+                    reading: results.reading.level,
+                    listening: results.listening.level,
+                    writing: results.writing.level,
+                    speaking: results.speaking.level
+                })
+            });
+
+            document.getElementById('res-read').innerText = results.reading.level;
+            document.getElementById('res-listen').innerText = results.listening.level;
+            document.getElementById('res-write').innerText = results.writing.level;
+            document.getElementById('res-speak').innerText = results.speaking.level;
+
+            showLoader(false);
+            document.querySelectorAll('[id^="step-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById('step-result').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

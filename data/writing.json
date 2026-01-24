@@ -1,0 +1,99 @@
+{
+  "writing_tasks": {
+    "A1": {
+      "topic": "Write your daily routine",
+      "instructions": "Write a short text answering these questions:\n- What time do you wake up?\n- What do you eat for breakfast?\n- What do you do in the afternoon?\n- What time do you go to bed?"
+    },
+    "B1": {
+      "topic": "Write a review of a movie you really like",
+      "instructions": "Include these points in your review:\n- What is the name of the movie and what kind of movie is it?\n- Briefly describe the plot (without giving away the ending!).\n- What did you like most about it?\n- Why do you recommend it to other people?"
+    },
+    "C1": {
+      "topic": "Artificial Intelligence (AI) is rapidly changing the world",
+      "instructions": "Write a formal essay expressing your views:\n- Analyze the potential benefits of AI in sectors like healthcare or education.\n- Critically evaluate the risks (e.g., job displacement, privacy concerns).\n- Propose measures that governments or companies should take to manage these risks."
+    }
+  },
+  "grammar_questions": {
+    "A1": [
+      {
+        "question": "She ___ a teacher.",
+        "options": ["are", "is", "am", "be"],
+        "correct_index": 1
+      },
+      {
+        "question": "We ___ coffee in the morning.",
+        "options": ["drinks", "drinking", "drink", "drank"],
+        "correct_index": 2
+      },
+      {
+        "question": "He goes to work ___ 8 o’clock.",
+        "options": ["in", "on", "at", "to"],
+        "correct_index": 2
+      },
+      {
+        "question": "They ___ TV every evening.",
+        "options": ["watch", "watches", "watched", "watching"],
+        "correct_index": 0
+      },
+      {
+        "question": "I have ___ apple for breakfast.",
+        "options": ["a", "an", "the", "no article"],
+        "correct_index": 1
+      }
+    ],
+    "B1": [
+      {
+        "question": "I was tired, ___ I decided to go home early.",
+        "options": ["because", "but", "so", "although"],
+        "correct_index": 2
+      },
+      {
+        "question": "She has lived here ___ five years.",
+        "options": ["since", "for", "during", "while"],
+        "correct_index": 1
+      },
+      {
+        "question": "If it ___ tomorrow, we will stay at home.",
+        "options": ["rain", "rains", "rained", "raining"],
+        "correct_index": 1
+      },
+      {
+        "question": "This is the ___ movie I have ever seen.",
+        "options": ["more interesting", "very interesting", "most interesting", "interesting"],
+        "correct_index": 2
+      },
+      {
+        "question": "He apologized ___ being late.",
+        "options": ["for", "about", "to", "with"],
+        "correct_index": 0
+      }
+    ],
+    "C1": [
+      {
+        "question": "Had I known about the problem earlier, I ___ action immediately.",
+        "options": ["will take", "would take", "would have taken", "had taken"],
+        "correct_index": 2
+      },
+      {
+        "question": "The proposal was rejected, ___ strong support from several experts.",
+        "options": ["although", "because", "despite", "however"],
+        "correct_index": 2
+      },
+      {
+        "question": "She spoke in such a convincing manner ___ everyone agreed with her.",
+        "options": ["that", "which", "what", "as"],
+        "correct_index": 0
+      },
+      {
+        "question": "Rarely ___ such a dramatic change in public opinion.",
+        "options": ["we have seen", "have we seen", "we saw", "did we see"],
+        "correct_index": 1
+      },
+      {
+        "question": "The report highlights issues ___ are likely to affect future policy decisions.",
+        "options": ["what", "whom", "whose", "that"],
+        "correct_index": 3
+      }
+    ]
+  }
+}

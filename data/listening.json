@@ -1,0 +1,144 @@
+{
+  "announcements_task": {
+    "title": "Part 1: Announcements",
+    "description": "Listen to the announcements and match them with the correct situation.",
+    "options": [
+      "Passengers are told that their flight will leave from a different gate",
+      "Passengers are informed that their flight is delayed",
+      "Passengers are asked to go to check-in",
+      "Passengers are told to start boarding",
+      "Passengers are informed that their flight has been cancelled",
+      "Passengers are informed about a long or unclear delay",
+      "Passengers are reminded to collect their luggage",
+      "Passengers are informed about changes to airport security",
+      "Passengers are offered compensation"
+    ],
+    "clips": [
+      {
+        "id": 1,
+        "level": "A1",
+        "text": "Attention please. Flight 12 to London is late. Passengers on Flight 12, please wait in the seating area.",
+        "correct_option_index": 1
+      },
+      {
+        "id": 2,
+        "level": "A1",
+        "text": "Passengers travelling on Flight 45 to Paris may now check in at Desk 3. Please have your passport and ticket ready.",
+        "correct_option_index": 2
+      },
+      {
+        "id": 3,
+        "level": "B1",
+        "text": "This is the boarding announcement for Flight 208 to Rome. Passengers are requested to proceed to Gate 15 for boarding.",
+        "correct_option_index": 3
+      },
+      {
+        "id": 4,
+        "level": "B1",
+        "text": "Due to a technical problem, Flight 670 to Berlin has been cancelled. Passengers should contact the airline service desk for further assistance.",
+        "correct_option_index": 4
+      },
+      {
+        "id": 5,
+        "level": "C1",
+        "text": "We regret to inform passengers that ongoing air traffic restrictions have resulted in an indefinite delay to Flight 404 to New York. Further updates will be provided as soon as more information becomes available.",
+        "correct_option_index": 5
+      }
+    ]
+  },
+  "levels": {
+    "A1": {
+      "title": "Part 2: Tom's Job",
+      "transcript": "Hi, my name is Tom. I work in a small café near my home. I start work at eight o’clock in the morning. In the café, I make coffee and clean the tables. I like my job because I talk to many people every day. After work, I go home and watch TV.",
+      "questions": [
+        {
+          "question": "Where does Tom work?",
+          "options": ["In a restaurant", "In a café", "In an office", "In a shop"],
+          "correct_index": 1
+        },
+        {
+          "question": "What time does Tom start work?",
+          "options": ["7:00", "8:00", "9:00", "10:00"],
+          "correct_index": 1
+        },
+        {
+          "question": "What does Tom do at work?",
+          "options": ["He cooks food", "He answers phones", "He makes coffee", "He works on a computer"],
+          "correct_index": 2
+        },
+        {
+          "question": "Why does Tom like his job?",
+          "options": ["It pays well", "It is close to home", "He talks to many people", "He works with friends"],
+          "correct_index": 2
+        },
+        {
+          "question": "What does Tom do after work?",
+          "options": ["Goes shopping", "Meets friends", "Watches TV", "Goes to the gym"],
+          "correct_index": 2
+        }
+      ]
+    },
+    "B1": {
+      "title": "Part 2: New Public Park",
+      "transcript": "Good evening. The city council has announced plans to build a new public park in the north of the city. The park will include walking paths, a children’s playground and an outdoor sports area. Local residents have welcomed the idea, saying it will improve the quality of life in the neighbourhood. However, some people are worried about increased traffic and noise during construction. The project is expected to begin early next year.",
+      "questions": [
+        {
+          "question": "What is the main topic of the announcement?",
+          "options": ["A new shopping centre", "A road improvement project", "A new public park", "A housing development"],
+          "correct_index": 2
+        },
+        {
+          "question": "Which feature is NOT mentioned as part of the park?",
+          "options": ["Walking paths", "A playground", "Sports areas", "A parking garage"],
+          "correct_index": 3
+        },
+        {
+          "question": "How do many local residents feel about the plan?",
+          "options": ["Angry", "Supportive", "Confused", "Uninterested"],
+          "correct_index": 1
+        },
+        {
+          "question": "What concerns do some people have?",
+          "options": ["Higher taxes", "Fewer shops", "Traffic and noise", "Safety problems"],
+          "correct_index": 2
+        },
+        {
+          "question": "When will construction likely start?",
+          "options": ["This month", "Next summer", "Early next year", "In two years"],
+          "correct_index": 2
+        }
+      ]
+    },
+    "C1": {
+      "title": "Part 2: The Future of Work",
+      "transcript": "In recent years, remote work has shifted from being a temporary solution to becoming a long-term strategy for many organisations. While employees often report increased flexibility and improved work–life balance, employers remain divided on its long-term effectiveness. Some managers argue that reduced face-to-face interaction can weaken collaboration and company culture. Others, however, claim that productivity can actually improve when employees are given greater autonomy. As companies continue to experiment with hybrid models, the debate over the future of work shows no sign of being resolved.",
+      "questions": [
+        {
+          "question": "What is the speaker mainly discussing?",
+          "options": ["The history of office work", "The rise and debate around remote work", "Problems with digital communication", "Reasons employees prefer office jobs"],
+          "correct_index": 1
+        },
+        {
+          "question": "Why are some employers concerned about remote work?",
+          "options": ["It increases operational costs", "It reduces employee autonomy", "It may harm collaboration and culture", "It leads to higher staff turnover"],
+          "correct_index": 2
+        },
+        {
+          "question": "What view do supporters of remote work hold?",
+          "options": ["It should replace all office jobs", "It lowers productivity", "It improves employee independence", "It requires strict supervision"],
+          "correct_index": 2
+        },
+        {
+          "question": "What does “hybrid models” refer to?",
+          "options": ["Working in different industries", "Combining remote and office work", "Using advanced technology", "Short-term contracts"],
+          "correct_index": 1
+        },
+        {
+          "question": "What can be inferred from the final sentence?",
+          "options": ["A clear solution has been found", "Companies have rejected remote work", "The discussion is ongoing", "Employees oppose hybrid models"],
+          "correct_index": 2
+        }
+      ]
+    }
+  }
+}

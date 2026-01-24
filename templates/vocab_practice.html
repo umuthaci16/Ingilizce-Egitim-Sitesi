@@ -1,0 +1,224 @@
+{% extends "layout.html" %}
+
+{% block title %}Kelime Pratiği{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto mt-4 ">
+    
+    <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white">Kelime Pratiği</h2>
+        <a href="{{url_for('main.all_vocabs_page')}}" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition font-medium shadow-sm">
+        Sözlük →
+        </a>
+    </div>
+
+    <div class="w-full max-w-5xl mx-auto bg-white dark:bg-gray-800 p-5 md:p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 relative transition-colors">
+        
+        <div id="vocab-area" class="space-y-1 md:space-y-2"> 
+            
+            <div class="flex items-center justify-center gap-3 md:gap-4">
+                <span id="word" class="text-3xl md:text-5xl font-extrabold text-indigo-700 dark:text-indigo-400 tracking-wide text-center transition-colors">...</span>
+                <div class="flex flex-col items-start ml-3">
+                    <span id="level" class="text-sm font-semibold text-white bg-indigo-600 px-2 py-0.5 rounded hidden"></span>
+                    <span id="word_type" class="text-sm text-gray-600 dark:text-gray-300  px-0 py-0 rounded mt-1 hidden"></span>
+                </div>
+                <button id="play-btn" class="shrink-0 mt-1 p-3 bg-transparent text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-full transition active:scale-95 group" title="Kelimeyi seslendir">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 transition-colors">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="w-full max-w-2xl mx-auto flex flex-col sm:flex-row gap-3 mt-4">
+                <input type="text" id="user-meaning" placeholder="Türkçesini yazınız..." autocomplete="off" spellcheck="false"
+                       class="w-full sm:flex-1 p-3 text-base border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-white rounded-lg focus:border-indigo-500 dark:focus:border-indigo-500 focus:ring-0 outline-none transition shadow-sm text-center sm:text-left placeholder-gray-400 dark:placeholder-gray-600">
+                
+                <button id="check-btn" class="w-full sm:w-auto shrink-0 px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-base font-bold rounded-lg shadow-md transition transform active:scale-95 whitespace-nowrap">
+                    Kontrol Et
+                </button>
+            </div>
+
+            <div id="result" class="text-lg md:text-xl font-bold min-h-6 text-center py-2 mt-2"></div>
+            
+            <div class="hidden bg-gray-50 dark:bg-gray-700/50 p-5 md:p-6 rounded-xl border border-gray-200 dark:border-gray-600 text-left space-y-3 mt-4" id="details-container">
+                <div class="flex gap-2 items-center">
+                    <span id="detail-level" class="text-xs font-semibold text-white bg-indigo-600 px-2 py-0.5 rounded hidden"></span>
+                    <span id="detail-word-type" class="text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded hidden"></span>
+                </div>
+                <div>
+                    <span class="text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider block mb-1">Anlamlar</span>
+                    <div id="meanings" class="text-base md:text-lg text-gray-800 dark:text-gray-100 font-medium leading-snug"></div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-600 pt-3">
+                    <span class="text-xs font-bold text-gray-400 dark:text-gray-400 uppercase tracking-wider block mb-1">Örnek Cümle</span>
+                    <div id="example" class="text-sm md:text-base text-gray-600 dark:text-gray-300 italic leading-relaxed"></div>
+                </div>
+            </div>
+
+            <button id="next-btn" class="hidden w-full max-w-xs mx-auto px-6 py-2.5 border-2 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 font-bold text-base rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500 transition mt-6">
+                Sonraki Kelime →
+            </button>
+            
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Sonuç renkleri için dinamik sınıflar */
+    .result.correct { color: #10B981; } /* Green-500 */
+    .dark .result.correct { color: #34D399; } /* Green-400 */
+    
+    .result.incorrect { color: #EF4444; } /* Red-500 */
+    .dark .result.incorrect { color: #F87171; } /* Red-400 */
+</style>
+{% endblock %}
+
+{% block scripts %}
+ <script>
+        let currentId = 1;
+        let currentWord = '';
+        const playBtn = document.getElementById('play-btn');
+        
+        function loadVocab(id) {
+            fetch(`/get_vocab/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        document.getElementById('vocab-area').innerHTML = '<div class="text-xl text-gray-400 dark:text-gray-500 font-medium py-10 text-center">Tüm kelimeler tamamlandı! 🎉</div>';
+                        return;
+                    }
+                    currentWord = data.word;
+                    document.getElementById('word').textContent = data.word;
+                        // Levels & word_types
+                        window.currentLevels = data.levels || [];
+                        window.currentWordTypes = data.word_types || [];
+                        const levelEl = document.getElementById('level');
+                        const wtEl = document.getElementById('word_type');
+                        if(window.currentLevels && window.currentLevels.length){
+                            levelEl.textContent = window.currentLevels[0]; levelEl.classList.remove('hidden');
+                            document.getElementById('detail-level').textContent = window.currentLevels.join(', '); document.getElementById('detail-level').classList.remove('hidden');
+                        } else { levelEl.classList.add('hidden'); document.getElementById('detail-level').classList.add('hidden'); }
+                        if(window.currentWordTypes && window.currentWordTypes.length){
+                            wtEl.textContent = window.currentWordTypes[0]; wtEl.classList.remove('hidden');
+                            document.getElementById('detail-word-type').textContent = window.currentWordTypes.join(', '); document.getElementById('detail-word-type').classList.remove('hidden');
+                        } else { wtEl.classList.add('hidden'); document.getElementById('detail-word-type').classList.add('hidden'); }
+                    
+                    resetPlayIcon();
+                    
+                    window.currentMeanings = data.meanings || [];
+                    window.currentExamples = data.examples || [];
+                    
+                    document.getElementById('meanings').textContent = '';
+                    document.getElementById('example').textContent = '';
+                    document.getElementById('details-container').classList.add('hidden');
+                    document.getElementById('user-meaning').value = '';
+                    
+                    const resDiv = document.getElementById('result');
+                    resDiv.textContent = '';
+                    resDiv.className = '';
+                    
+                    document.getElementById('next-btn').style.display = 'none';
+                    
+                    setTimeout(() => document.getElementById('user-meaning').focus(), 100);
+                });
+        }
+
+        document.getElementById('check-btn').onclick = function() {
+            const userAnswer = document.getElementById('user-meaning').value.trim();
+            if(!userAnswer) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/check_vocab_answer', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ vocab_id: currentId, user_answer: userAnswer })
+            })
+            .then(res => res.json())
+            .then(data => {
+                const resDiv = document.getElementById('result');
+                if (data.error) {
+                    resDiv.textContent = data.error;
+                    resDiv.className = 'result incorrect';
+                    return;
+                }
+                if (data.is_correct) {
+                    resDiv.textContent = 'Doğru!';
+                    resDiv.className = 'result correct';
+                } else {
+                    resDiv.textContent = 'Yanlış!';
+                    resDiv.className = 'result incorrect';
+                }
+                
+                const exs = data.examples || [];
+                document.getElementById('example').textContent = (exs.join(' — ') || '-');
+                
+                const meaningsToShow = data.correct_meanings && data.correct_meanings.length ? data.correct_meanings : (window.currentMeanings || []);
+                document.getElementById('meanings').textContent = (meaningsToShow.join(', ') || '-');
+                
+                // Details badges already updated in loadVocab; keep visible
+                
+                document.getElementById('details-container').classList.remove('hidden');
+                document.getElementById('next-btn').style.display = 'block'; 
+                
+                document.getElementById('next-btn').focus();
+            });
+        };
+
+        const answerInput = document.getElementById('user-meaning');
+        answerInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter'){
+                e.preventDefault();
+                document.getElementById('check-btn').click();
+            }
+        });
+
+        document.getElementById('next-btn').onclick = function() {
+            currentId++;
+            loadVocab(currentId);
+        };
+
+        playBtn.onclick = function() {
+            toggleSpeak(currentWord);
+        };
+
+        function toggleSpeak(text) {
+            if(!('speechSynthesis' in window) || !text) return;
+
+            // SVG Elementini seç
+            const svg = playBtn.querySelector('svg');
+
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
+                resetPlayIcon();
+            } else {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = 'en-US';
+                u.rate = 0.9; 
+                
+                // OYNATILIYOR EFEKTİ: Mavi yap ve içini doldur
+                playBtn.classList.remove('text-gray-400', 'dark:text-gray-500');
+                playBtn.classList.add('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+                svg.setAttribute('fill', 'currentColor');
+                
+                u.onend = () => resetPlayIcon();
+                u.onerror = () => resetPlayIcon();
+                
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        function resetPlayIcon() {
+            // DURDU EFEKTİ: Gri yap ve içini boşalt
+            const svg = playBtn.querySelector('svg');
+            playBtn.classList.add('text-gray-400', 'dark:text-gray-500');
+            playBtn.classList.remove('text-indigo-600', 'dark:text-indigo-400', 'bg-indigo-50', 'dark:bg-indigo-900/30');
+            svg.setAttribute('fill', 'none');
+        }
+
+        loadVocab(currentId);
+        
+        window.addEventListener('beforeunload', () => {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        });
+
+    </script>
+{% endblock %}

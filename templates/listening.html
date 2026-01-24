@@ -1,0 +1,540 @@
+{% extends "layout.html" %}
+
+{% block title %}Dinleme Alıştırması{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Ses dalgası animasyonu */
+    .audio-wave-bar {
+        animation: wave 1.2s ease-in-out infinite;
+    }
+    .paused .audio-wave-bar {
+        animation-play-state: paused;
+        transform: scaleY(0.2);
+    }
+    @keyframes wave {
+        0%, 100% { transform: scaleY(0.2); }
+        50% { transform: scaleY(1); }
+    }
+    /* Animasyonlar (Pronunciation referanslı) */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="exam-toast" class="fixed bottom-5 right-5 z-50 hidden animate-bounce">
+    <div class="bg-white border-l-4 border-red-600 rounded-lg shadow-2xl p-6 max-w-sm">
+        <div class="flex items-start gap-4">
+            
+            <div>
+                <h3 class="font-bold text-gray-900 text-lg">Seviye Sınırı!</h3>
+                <p class="text-sm text-gray-600 mt-1">XP limitine ulaştın. Sınava girmezsen bu pratikten XP kazanamayacaksın.</p>
+                
+                <div class="mt-4 flex gap-3">
+                    <a href="/exam_page?skill=listening" class="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded hover:bg-red-700 transition">
+                        Sınava Gir
+                    </a>
+                    <button onclick="closeToast()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-bold rounded hover:bg-gray-200 transition">
+                        Daha Sonra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="max-w-5xl mx-auto pt-20 pb-6 md:pt-4">
+
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 px-4 md:px-0">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white text-center md:text-left">Dinleme ve Anlama</h2>
+        
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Seviyen: {{ level }}</span>
+            
+        </div>
+    </div>
+
+    <div id="startContainer" class="w-full max-w-5xl mx-auto bg-white dark:bg-gray-800 p-6 md:p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 text-center relative min-h-[400px] flex flex-col items-center justify-center">
+        
+        <div id="loader" class="hidden absolute inset-0 w-full h-full bg-white/95 dark:bg-gray-800/95 z-50 flex flex-col items-center justify-center rounded-2xl transition-opacity duration-300">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mb-4"></div>
+            <span id="loaderText" class="text-gray-600 dark:text-gray-300 font-medium animate-pulse">Ders hazırlanıyor...</span>
+        </div>
+
+        <div class="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6 shadow-sm animate-fade-in">
+            
+            <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M20 16v-4a8 8 0 1 0-16 0v4m16 0v2a2 2 0 0 1-2 2h-2v-6h2a2 2 0 0 1 2 2ZM4 16v2a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 0-2 2Z"/>
+            </svg>
+            
+        </div>
+        <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Dinlemeye Hazır Mısın?</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-10 max-w-lg text-lg">
+            Seviyene uygun bir konuşma metni oluşturulacak. Metni dinleyip boşlukları dolduracak ve soruları cevaplayacaksın.
+        </p>
+        <button onclick="startListeningSession()" class="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition transform hover:-translate-y-1 active:scale-95">
+            Dersi Başlat
+        </button>
+    </div>
+
+    <div id="activeContent" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 relative px-4 md:px-0 animate-fade-in">
+        
+        <div class="lg:col-span-7 space-y-6">
+            
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-4">
+                    <div>
+                        <h2 id="lessonTitle" class="text-xl font-bold text-gray-800 dark:text-white leading-tight">Listening Exercise</h2>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Metni dikkatlice dinleyin.</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div id="audioVisualizer" class="hidden md:flex items-end gap-1 h-6 mr-4 paused">
+                            <div class="w-1 bg-indigo-500 rounded-full h-full audio-wave-bar" style="animation-duration: 0.8s"></div>
+                            <div class="w-1 bg-indigo-500 rounded-full h-full audio-wave-bar" style="animation-duration: 1.1s"></div>
+                            <div class="w-1 bg-indigo-500 rounded-full h-full audio-wave-bar" style="animation-duration: 0.9s"></div>
+                            <div class="w-1 bg-indigo-500 rounded-full h-full audio-wave-bar" style="animation-duration: 1.2s"></div>
+                        </div>
+                        <button onclick="changeSpeed()" id="speedBtn" class="text-xs font-bold bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-gray-600 dark:text-gray-300">1.0x</button>
+                    </div>
+                </div>
+
+                <div class="flex justify-center">
+                    <button onclick="playAudio()" id="playBtn" class="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 transform active:scale-95">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span id="playBtnText">Metni Dinle</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-3 mb-6">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 flex items-center justify-center font-bold text-sm">1</div>
+                    <h3 class="font-bold text-gray-800 dark:text-white">Boşluk Doldurma</h3>
+                </div>
+                
+                <div id="blanksContainer" class="space-y-6">
+                    <p class="text-gray-400 italic text-center py-4">İçerik yükleniyor...</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="lg:col-span-5 space-y-6">
+            
+            <div id="summaryCard" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">2</div>
+                    <h3 class="font-bold text-gray-800 dark:text-white">Özet Çıkarma</h3>
+                </div>
+                
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">Dinlediğin metni kısaca Türkçe olarak özetle.</p>
+                
+                <textarea id="gistInput" rows="5" class="w-full p-3 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 rounded-lg focus:border-indigo-500 focus:ring-0 text-sm resize-none mb-3" placeholder="Metinde anlatılan ana fikir..."></textarea>
+            </div>
+
+            <div id="mcCard" class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-8 h-8 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm">3</div>
+                    <h3 class="font-bold text-gray-800 dark:text-white">Test Soruları</h3>
+                </div>
+
+                <div id="mcContainer" class="space-y-6">
+                    <p class="text-gray-400 italic text-center py-4">Sorular yükleniyor...</p>
+                </div>
+            </div>
+
+            <div class="bottom-4 z-10">
+                <button onclick="submitAssessment()" id="submitBtn" class="w-full py-4 bg-indigo-600 dark:bg-indigo-600 hover:bg-indigo-700 dark:hover:bg-indigo-500 text-white font-bold rounded-xl shadow-xl transition transform hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2">
+                    <span>Tamamla ve Gönder</span>
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="resultArea" class="hidden max-w-4xl mx-auto mt-10 p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 animate-fade-in text-center ">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Sınav Sonucu</h2>
+        <div class="text-5xl font-extrabold text-indigo-600 dark:text-indigo-400 mb-8" id="finalScoreDisplay">0</div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="block text-xs uppercase text-gray-500 font-bold">Özet Puanı</span>
+                <span id="gistScoreDisplay" class="text-xl font-bold text-gray-800 dark:text-white">0</span>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="block text-xs uppercase text-gray-500 font-bold">Boşluklar</span>
+                <span id="blanksScoreDisplay" class="text-xl font-bold text-gray-800 dark:text-white">0</span>
+            </div>
+            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="block text-xs uppercase text-gray-500 font-bold">Test</span>
+                <span id="mcScoreDisplay" class="text-xl font-bold text-gray-800 dark:text-white">0</span>
+            </div>
+        </div>
+
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 flex items-center gap-2 mb-6">
+            <span class="font-bold text-indigo-900 dark:text-indigo-200">Kazanılan XP:</span>
+            <span id="resXpGain" class="text-xl font-black text-indigo-600 dark:text-indigo-400"></span>
+        </div>
+
+
+        <div id="detailedReview" class="text-left space-y-6 mb-8">
+            </div>
+        <div class="text-left">
+             <button onclick="document.getElementById('originalTextContainer').classList.toggle('hidden')" class="text-sm font-bold text-gray-500 hover:text-indigo-600 mb-2 flex items-center gap-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                Orijinal Metni Göster
+             </button>
+             <div id="originalTextContainer" class="hidden p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 leading-relaxed">
+                 <p id="originalTextDisplay"></p>
+             </div>
+        </div>
+
+        <button onclick="location.reload()" class="mt-8 px-8 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-gray-800 dark:text-white font-bold rounded-lg transition">
+            Yeni Sınav Başlat
+        </button>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    let currentLesson = null;
+    let synth = window.speechSynthesis;
+    let currentUtterance = null;
+    let isPlaying = false;
+    let speeds = [1.0, 0.8, 0.6];
+    let speedIndex = 0;
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    
+    // UI References
+    const dom = {
+        loader: document.getElementById('loader'),
+        loaderText: document.getElementById('loaderText'),
+        startContainer: document.getElementById('startContainer'),
+        activeContent: document.getElementById('activeContent'),
+        resultArea: document.getElementById('resultArea'),
+        playBtn: document.getElementById('playBtn'),
+        playBtnText: document.getElementById('playBtnText'),
+        audioVisualizer: document.getElementById('audioVisualizer')
+        
+    };
+
+    // 1. Start Session
+    async function startListeningSession() {
+        const level = "{{ level }}";
+        
+        toggleLoader(true, "Yapay zeka dinleme metnini hazırlıyor...");
+        
+        try {
+            const res = await fetch('/api/generate_listening', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({ level: level })
+            });
+            const data = await res.json();
+            
+            if(data.status === "ok" && data.lesson) {
+                currentLesson = data.lesson;
+                renderLessonUI(data.lesson);
+                
+                dom.startContainer.classList.add('hidden');
+                dom.activeContent.classList.remove('hidden');
+                
+                // Reset audio state
+                if(synth.speaking) synth.cancel();
+            } else {
+                throw new Error("Ders oluşturulamadı.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Hata: " + e.message);
+            dom.startContainer.classList.remove('hidden');
+        } finally {
+            toggleLoader(false);
+        }
+    }
+
+    // 2. Render UI
+    function renderLessonUI(lesson) {
+        document.getElementById('lessonTitle').textContent = lesson.title || "Listening Task";
+        document.getElementById('originalTextDisplay').textContent = lesson.listening_text;
+        
+        // Render Blanks (SOL KOLON)
+        const blanksContainer = document.getElementById('blanksContainer');
+        blanksContainer.innerHTML = '';
+        (lesson.blanks || []).forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = "flex flex-wrap items-center gap-2 text-lg text-gray-700 dark:text-gray-300 leading-relaxed";
+            div.innerHTML = `
+                <span class="text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 rounded">${index + 1}</span>
+                <span>${item.prefix || "..."}</span>
+                <input type="text" data-correct="${item.correct}" class="blank-input border-b-2 border-indigo-200 dark:border-indigo-600 bg-transparent px-1 text-center text-indigo-700 dark:text-indigo-400 font-bold focus:border-indigo-600 outline-none w-32 placeholder-gray-300">
+                <span>${item.suffix || "..."}</span>
+            `;
+            blanksContainer.appendChild(div);
+        });
+
+        // Render MC (SAĞ KOLON)
+        const mcContainer = document.getElementById('mcContainer');
+        mcContainer.innerHTML = '';
+        (lesson.mc || []).forEach((q, index) => {
+            const div = document.createElement('div');
+            div.className = "p-4 bg-gray-50 dark:bg-gray-700/30 rounded-xl border border-gray-100 dark:border-gray-700";
+            
+            let optionsHtml = '';
+            (q.options || []).forEach(opt => {
+                optionsHtml += `
+                    <label class="flex items-center gap-3 p-2 rounded-lg cursor-pointer hover:bg-white dark:hover:bg-gray-600 transition mb-1">
+                        <input type="radio" name="mc_${index}" value="${opt}" class="text-indigo-600 focus:ring-indigo-500 mt-0.5">
+                        <span class="text-sm text-gray-600 dark:text-gray-300">${opt}</span>
+                    </label>
+                `;
+            });
+
+            div.innerHTML = `
+                <p class="font-bold text-gray-800 dark:text-white mb-2 text-sm"><span class="text-green-600 mr-2">S${index+1}.</span>${q.question}</p>
+                <div class="flex flex-col" data-correct="${q.correct}">${optionsHtml}</div>
+            `;
+            mcContainer.appendChild(div);
+        });
+    }
+
+    // 3. Audio Logic
+    function playAudio() {
+        if (!currentLesson?.listening_text) return;
+
+        if (synth.speaking) {
+            if(isPlaying) {
+                synth.pause();
+                isPlaying = false;
+                updateAudioUI(false);
+            } else {
+                synth.resume();
+                isPlaying = true;
+                updateAudioUI(true);
+            }
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(currentLesson.listening_text);
+        utterance.lang = 'en-US';
+        utterance.rate = speeds[speedIndex];
+        
+        let voices = synth.getVoices();
+        let preferred = voices.find(v => v.name.includes('Google US') || v.name.includes('Samantha') || v.lang === 'en-US');
+        if(preferred) utterance.voice = preferred;
+
+        utterance.onstart = () => { isPlaying = true; updateAudioUI(true); };
+        utterance.onend = () => { isPlaying = false; updateAudioUI(false); };
+        utterance.onpause = () => { isPlaying = false; updateAudioUI(false); }; 
+
+        synth.speak(utterance);
+    }
+
+    function updateAudioUI(playing) {
+        if(playing) {
+            dom.playBtn.classList.add('bg-red-500', 'hover:bg-red-600');
+            dom.playBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+            dom.playBtn.innerHTML = `<svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>Durdur</span>`;
+            dom.audioVisualizer.classList.remove('paused');
+        } else {
+            dom.playBtn.classList.remove('bg-red-500', 'hover:bg-red-600');
+            dom.playBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+            dom.playBtn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> <span>Devam Et</span>`;
+            dom.audioVisualizer.classList.add('paused');
+        }
+    }
+
+    function changeSpeed() {
+        speedIndex = (speedIndex + 1) % speeds.length;
+        document.getElementById('speedBtn').innerText = speeds[speedIndex] + "x";
+        if(synth.speaking) { synth.cancel(); setTimeout(playAudio, 100); }
+    }
+
+    // 4. Submit & Assess
+    async function submitAssessment() {
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "Değerlendiriliyor...";
+
+        const gistAnswer = document.getElementById('gistInput').value;
+        const blanksData = Array.from(document.querySelectorAll('.blank-input')).map(i => ({
+            user: i.value.trim(), correct: i.dataset.correct
+        }));
+        
+        const mcData = [];
+        document.getElementById('mcContainer').childNodes.forEach((div, idx) => {
+            if(div.nodeType !== 1) return;
+            const checked = div.querySelector(`input[name="mc_${idx}"]:checked`);
+            mcData.push({
+                user: checked ? checked.value : "",
+                correct: div.querySelector('.flex').dataset.correct 
+            });
+        });
+
+        try {
+            const res = await fetch('/api/assess_listening', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+                body: JSON.stringify({
+                    listening_text: currentLesson.listening_text,
+                    title: currentLesson.title,
+                    level: "{{ level }}",
+                    gist_answer: gistAnswer,
+                    blanks: blanksData,
+                    mc: mcData
+                })
+            });
+            const data = await res.json();
+            
+            dom.activeContent.classList.add('hidden');
+            dom.resultArea.classList.remove('hidden');
+            
+            document.getElementById('finalScoreDisplay').innerText = data.final_score;
+            document.getElementById('gistScoreDisplay').innerText = data.gist.score;
+            document.getElementById('resXpGain').innerText = `+${data.xp_gain} XP`;
+            // Gist Feedback'i resultArea'daki eski yerden silebilirsin veya gizleyebilirsin, 
+            // çünkü artık detaylı raporda gösteriyoruz. Ama istersen kalsın.
+            if(document.getElementById('gistFeedback')) {
+                 document.getElementById('gistFeedback').innerText = data.gist.feedback;
+            }
+
+            document.getElementById('blanksScoreDisplay').innerText = data.blanks.score;
+            document.getElementById('mcScoreDisplay').innerText = data.multiple_choice.score;
+            
+            // YENİ FONKSİYONU ÇAĞIR
+            renderDetailedReview(gistAnswer, data.gist.feedback, blanksData, mcData);
+
+            window.scrollTo({top: 0, behavior: 'smooth'});
+
+        } catch (e) {
+            console.error(e);
+            alert("Hata oluştu.");
+            btn.disabled = false;
+            btn.innerText = "Tekrar Dene";
+        }
+    }
+
+    // Bu fonksiyonu script bloğuna ekle (submitAssessment fonksiyonunun altına veya üstüne)
+    function renderDetailedReview(gistAnswer, gistFeedback, blanksData, mcData) {
+        const container = document.getElementById('detailedReview');
+        container.innerHTML = ''; // Temizle
+
+        // 1. ÖZET BÖLÜMÜ
+        const gistSection = document.createElement('div');
+        gistSection.className = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-5";
+        gistSection.innerHTML = `
+            <h4 class="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs">1</span>
+                Özet Değerlendirmesi
+            </h4>
+            <div class="mb-3">
+                <p class="text-xs uppercase text-gray-400 font-bold mb-1">Senin Yazdığın:</p>
+                <p class="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg text-sm italic">"${gistAnswer}"</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase text-indigo-500 font-bold mb-1">Yapay Zeka Yorumu:</p>
+                <p class="text-indigo-700 dark:text-indigo-300 text-sm font-medium">${gistFeedback}</p>
+            </div>
+        `;
+        container.appendChild(gistSection);
+
+        // 2. BOŞLUK DOLDURMA BÖLÜMÜ
+        const blanksSection = document.createElement('div');
+        blanksSection.className = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-5";
+        
+        let blanksHtml = `<h4 class="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">2</span>
+            Boşluk Doldurma Kontrolü
+        </h4><div class="space-y-2">`;
+
+        blanksData.forEach((item, idx) => {
+            // Basit bir normalizasyon ile kontrol (büyük/küçük harf duyarsız)
+            const isCorrect = item.user.trim().toLowerCase() === item.correct.trim().toLowerCase();
+            const statusIcon = isCorrect 
+                ? `<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                : `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+            
+            blanksHtml += `
+                <div class="flex items-center justify-between p-2 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}">
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm font-bold text-gray-500">#${idx+1}</span>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold ${isCorrect ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400 line-through'}">${item.user || "(Boş)"}</span>
+                            ${!isCorrect ? `<span class="text-xs text-green-600 dark:text-green-400 font-bold">Doğrusu: ${item.correct}</span>` : ''}
+                        </div>
+                    </div>
+                    ${statusIcon}
+                </div>
+            `;
+        });
+        blanksHtml += `</div>`;
+        blanksSection.innerHTML = blanksHtml;
+        container.appendChild(blanksSection);
+
+        // 3. TEST SORULARI BÖLÜMÜ
+        const mcSection = document.createElement('div');
+        mcSection.className = "bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl p-5";
+        
+        let mcHtml = `<h4 class="font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs">3</span>
+            Test Soruları Kontrolü
+        </h4><div class="space-y-2">`;
+
+        mcData.forEach((item, idx) => {
+            const isCorrect = item.user === item.correct;
+            const statusIcon = isCorrect 
+                ? `<svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                : `<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+            mcHtml += `
+                 <div class="p-3 rounded-lg ${isCorrect ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'}">
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-sm font-bold text-gray-700 dark:text-gray-200">Soru ${idx+1}</span>
+                        ${statusIcon}
+                    </div>
+                    <div class="text-sm">
+                        ${!isCorrect ? `<div class="text-red-600 dark:text-red-400 mb-1"><span class="font-bold">Senin cevabın:</span> ${item.user || "Boş"}</div>` : ''}
+                        <div class="text-green-600 dark:text-green-400"><span class="font-bold">Doğru cevap:</span> ${item.correct}</div>
+                    </div>
+                </div>
+            `;
+        });
+        mcHtml += `</div>`;
+        mcSection.innerHTML = mcHtml;
+        container.appendChild(mcSection);
+    }
+
+    function toggleLoader(show, text="") {
+        if(show) {
+            dom.loaderText.innerText = text;
+            dom.loader.classList.remove('hidden');
+        } else {
+            dom.loader.classList.add('hidden');
+        }
+    }
+    
+    // Cleanup
+    window.addEventListener('beforeunload', () => synth.cancel());
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+    }
+
+    const isExamNeeded = {{ 'true' if exam_needed else 'false' }};
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        if (isExamNeeded) {
+            const toast = document.getElementById('exam-toast');
+            toast.classList.remove('hidden');
+            // İkonları yükle
+            if(window.lucide) lucide.createIcons();
+        }
+    });
+
+    function closeToast() {
+        document.getElementById('exam-toast').classList.add('hidden');
+    }
+</script>
+{% endblock %}

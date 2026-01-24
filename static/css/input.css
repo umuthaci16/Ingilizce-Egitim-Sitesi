@@ -1,0 +1,4 @@
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+/* npx @tailwindcss/cli -i ./static/css/input.css -o ./static/css/style.css --watch */

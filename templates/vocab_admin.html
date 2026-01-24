@@ -1,0 +1,240 @@
+{% extends "layout.html" %}
+
+{% block title %}Vocab Yönetimi{% endblock %}
+
+{% block content %}
+<div class="h-[calc(100vh-120px)] flex flex-col max-w-7xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Kelime Yönetimi</h2>
+    
+    <div class="flex flex-col md:flex-row gap-6 h-full overflow-hidden">
+        
+        <div class="w-full md:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm flex flex-col">
+            <div class="p-3 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex gap-2">
+                <input id="search" placeholder="Kelime ara..." class="flex-1 p-2 text-sm border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded focus:outline-none focus:border-indigo-500">
+                <button id="new-btn" class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 transition text-sm font-medium whitespace-nowrap">
+                    + Yeni
+                </button>
+            </div>
+            <div id="vocabs" class="flex-1 overflow-y-auto p-2 space-y-1">
+                </div>
+        </div>
+
+        <div class="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm p-6 overflow-y-auto">
+            <input type="hidden" id="vocab-id">
+            
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Kelime (Word)</label>
+                <input id="word" class="w-full p-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="Örn: Apple">
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Anlamlar (Meanings)</label>
+                        <button id="add-meaning" class="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-semibold">+ Ekle</button>
+                    </div>
+                    <div id="meanings-container" class="space-y-2"></div>
+                </div>
+
+                <div>
+
+            <div class="grid md:grid-cols-2 gap-8 mt-4">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Seviyeler (Levels)</label>
+                        <button id="add-level" class="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-semibold">+ Ekle</button>
+                    </div>
+                    <div id="levels-container" class="space-y-2"></div>
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Kelime Türleri (Word Types)</label>
+                        <button id="add-type" class="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-semibold">+ Ekle</button>
+                    </div>
+                    <div id="types-container" class="space-y-2"></div>
+                </div>
+            </div>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">Örnekler (Examples)</label>
+                        <button id="add-example" class="text-xs text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-2 py-1 rounded font-semibold">+ Ekle</button>
+                    </div>
+                    <div id="examples-container" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 pt-6 mt-6 border-t border-gray-100 dark:border-gray-700">
+                <button id="save-btn" class="px-8 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Kaydet</button>
+                <button id="delete-btn" class="px-6 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-100 dark:border-red-800 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition hidden">Sil</button>
+                <span id="status" class="text-sm font-medium text-green-600 dark:text-green-400 ml-auto"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* JS ile oluşturulan inputlar için stil - Dark Mode Destekli */
+    .meaning, .example { display: flex; gap: 8px; align-items: center; }
+    
+    .meaning input, .example input { 
+        flex: 1; 
+        padding: 8px; 
+        border: 1px solid #E5E7EB; 
+        border-radius: 6px; 
+        font-size: 0.95rem; 
+        background-color: #fff;
+        color: #1F2937;
+    }
+    
+    /* Dark Mode Inputs */
+    .dark .meaning input, .dark .example input {
+        border-color: #4B5563; /* gray-600 */
+        background-color: #111827; /* gray-900 */
+        color: #F3F4F6; /* gray-100 */
+    }
+
+    .meaning input:focus, .example input:focus { border-color: #6366F1; outline: none; }
+    
+    .small-btn { 
+        padding: 4px 10px; 
+        background: #F3F4F6; 
+        border: 1px solid #E5E7EB; 
+        border-radius: 4px; 
+        cursor: pointer; 
+        color: #6B7280; 
+    }
+    .dark .small-btn {
+        background: #374151; /* gray-700 */
+        border-color: #4B5563; /* gray-600 */
+        color: #9CA3AF; /* gray-400 */
+    }
+
+    .small-btn:hover { background: #E5E7EB; color: #374151; }
+    .dark .small-btn:hover { background: #4B5563; color: #F3F4F6; }
+    
+    .vocab-item { 
+        padding: 8px 12px; 
+        cursor: pointer; 
+        border-radius: 6px; 
+        font-size: 0.95rem; 
+        color: #374151; 
+    }
+    .dark .vocab-item { color: #D1D5DB; }
+
+    .vocab-item:hover { background-color: #EEF2FF; color: #4F46E5; }
+    .dark .vocab-item:hover { background-color: #312E81; /* indigo-900 */ color: #818CF8; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ... JS KODLARI AYNEN KALSIN ...
+function createInput(container, value='', placeholder='', cls=''){
+    const div = document.createElement('div');
+    div.className = cls; 
+    const input = document.createElement('input');
+    input.value = value || '';
+    input.placeholder = placeholder;
+    const remove = document.createElement('button');
+    remove.textContent = '✕';
+    remove.type = 'button';
+    remove.className = 'small-btn hover:text-red-500';
+    remove.onclick = ()=> div.remove();
+    div.appendChild(input);
+    div.appendChild(remove);
+    container.appendChild(div);
+}
+
+function clearForm(){
+    document.getElementById('vocab-id').value = '';
+    document.getElementById('word').value = '';
+    document.getElementById('status').textContent = '';
+    document.getElementById('delete-btn').style.display = 'none';
+    document.getElementById('meanings-container').innerHTML='';
+    document.getElementById('examples-container').innerHTML='';
+}
+
+function loadVocabs(){
+    fetch('/admin/api/vocabs').then(r=>r.json()).then(data=>{
+        window.vocabList = data.vocabs || [];
+        renderVocabs(window.vocabList, document.getElementById('search').value || '');
+    });
+}
+
+function renderVocabs(list, query){
+    const q = (query || '').toLowerCase().trim();
+    const el = document.getElementById('vocabs'); el.innerHTML='';
+    (list||[]).forEach(v=>{
+        const text = ((v.word||'') + ' ' + (v.levels||[]).join(' ') + ' ' + (v.word_types||[]).join(' ')).toLowerCase();
+        if(q && !text.includes(q)) return;
+        const d = document.createElement('div');
+        d.className='vocab-item';
+        // Build inner HTML: word + badges
+        const levelBadge = (v.levels && v.levels.length) ? `<span class="text-xs font-semibold text-white bg-indigo-600 px-2 py-0.5 rounded ml-2">${v.levels[0]}</span>` : '';
+        const typeBadge = (v.word_types && v.word_types.length) ? `<span class="text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-900 px-2 py-0.5 rounded ml-2">${v.word_types[0]}</span>` : '';
+        d.innerHTML = (v.word || '') + levelBadge + typeBadge;
+        d.onclick = ()=> loadVocabDetail(v.id);
+        el.appendChild(d);
+    });
+}
+
+function loadVocabDetail(id){
+    fetch(`/admin/api/vocab/${id}`).then(r=>r.json()).then(data=>{
+        if(data.error){ alert(data.error); return; }
+        document.getElementById('vocab-id').value = data.id;
+        document.getElementById('word').value = data.word;
+        const mc = document.getElementById('meanings-container'); mc.innerHTML='';
+        (data.meanings||[]).forEach(m=> createInput(mc, m, 'Anlam', 'meaning'));
+        const ec = document.getElementById('examples-container'); ec.innerHTML='';
+        (data.examples||[]).forEach(e=> createInput(ec, e, 'Örnek', 'example'));
+        const lc = document.getElementById('levels-container'); lc.innerHTML='';
+        (data.levels||[]).forEach(l=> createInput(lc, l, 'Seviye', 'level'));
+        const tc = document.getElementById('types-container'); tc.innerHTML='';
+        (data.word_types||[]).forEach(t=> createInput(tc, t, 'Tür', 'type'));
+        document.getElementById('delete-btn').style.display = 'inline-block';
+    });
+}
+
+function gatherList(containerId){
+    return Array.from(document.getElementById(containerId).querySelectorAll('input')).map(i=>i.value).filter(x=>x && x.trim());
+}
+
+document.getElementById('add-meaning').onclick = (e)=> { e.preventDefault(); createInput(document.getElementById('meanings-container'),'','Anlam','meaning'); };
+document.getElementById('add-example').onclick = (e)=> { e.preventDefault(); createInput(document.getElementById('examples-container'),'','Örnek','example'); };
+document.getElementById('new-btn').onclick = ()=> { clearForm(); createInput(document.getElementById('meanings-container'),'','Anlam','meaning'); };
+document.getElementById('add-level').onclick = (e)=> { e.preventDefault(); createInput(document.getElementById('levels-container'),'','Seviye','level'); };
+document.getElementById('add-type').onclick = (e)=> { e.preventDefault(); createInput(document.getElementById('types-container'),'','Tür','type'); };
+
+document.getElementById('save-btn').onclick = function(){
+    const id = document.getElementById('vocab-id').value;
+    const word = document.getElementById('word').value.trim();
+    if(!word){ alert('Kelime girin'); return; }
+    const payload = { 
+        word, 
+        meanings: gatherList('meanings-container'), 
+        examples: gatherList('examples-container'),
+        levels: gatherList('levels-container'),
+        word_types: gatherList('types-container')
+    };
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/admin/api/vocab/${id}` : '/admin/api/vocab';
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    fetch(url, { method: method, headers:{'Content-Type':'application/json','X-CSRFToken': csrfToken}, body: JSON.stringify(payload) })
+    .then(r=>r.json()).then(d=>{ 
+        if(d.success){ 
+            document.getElementById('status').textContent = id ? 'Güncellendi' : 'Eklendi'; 
+            if(!id) clearForm(); 
+            loadVocabs(); 
+            setTimeout(()=> document.getElementById('status').textContent='', 3000);
+        } else { alert('Hata'); } 
+    });
+};
+
+document.getElementById('search').addEventListener('input', function(e){
+    renderVocabs(window.vocabList || [], e.target.value);
+});
+
+clearForm(); loadVocabs();
+</script>
+{% endblock %}

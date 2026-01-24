@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" class="light"> 
+<head>
+    <title>{% block title %}{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='favicon/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='favicon/favicon-32x32.png') }}">
+    <link rel="manifest" href="{{ url_for('static', filename='favicon/site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon/favicon.ico') }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+   
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-transition { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        
+        @media (min-width: 768px) {
+            .sidebar-collapsed { width: 4.5rem !important; } 
+            
+            .sidebar-collapsed .link-text { display: none; }
+            .sidebar-collapsed .logo-text { display: none; }
+            .sidebar-collapsed .logo-icon { display: block; }
+            .sidebar-collapsed .auth-btn-text { display: none; }
+            .sidebar-collapsed .theme-text { display: none; }
+            
+            .sidebar-collapsed .auth-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+            .sidebar-collapsed .header-content { justify-content: center; padding-left: 0; padding-right: 0; }
+            .sidebar-collapsed .desktop-toggle { margin-left: 0; position: absolute; right: -12px; top: 20px; z-index: 50; }
+             
+             .sidebar-collapsed .sidebar-footer {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* 2. Tema ve Profil butonlarını alt alta (column) diz */
+    .sidebar-collapsed .theme-profile-box {
+        flex-direction: column;
+        width: auto;
+        margin-bottom: 0.5rem;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 3. Tema butonunun ve profil butonunun aynı boyutta olmasını sağla */
+    .sidebar-collapsed .theme-profile-box > #theme-toggle,
+    .sidebar-collapsed .theme-profile-box > a {
+        flex: none;
+        width: 2rem; /* w-10 */
+        height: 2rem;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* 4. Çıkış butonunu sadece ikon olacak şekilde daralt */
+    .sidebar-collapsed .logout-btn {
+        width: 2rem;
+        height: 2rem;
+        padding: 0;
+        justify-content: center;
+        border-radius: 0.5rem;
+    }
+
+    /* Gizlenen metinlerin görünmesini engelle ve önemli kıl */
+    .sidebar-collapsed .auth-btn-text { display: none !important; }
+    .sidebar-collapsed .theme-text { display: none !important; }
+        }
+
+        .logo-icon { display: none; }
+        
+        @media (max-width: 767px) {
+            .link-text { display: inline-block !important; }
+            .logo-text { display: inline-block !important; }
+            .theme-text { display: inline-block !important; }
+        }
+        
+        /* Chromium / WebKit scrollbars (apply broadly and for .custom-scrollbar containers) */
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 20px; }
+        *::-webkit-scrollbar-thumb:hover { background-color: #d1d5db; }
+
+        /* Scoped class for sidebar and other containers */
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 20px; }
+        .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #d1d5db; }
+
+        /* Dark mode overrides */
+        .dark *::-webkit-scrollbar-thumb { background-color: #4b5563; }
+        .dark *::-webkit-scrollbar-thumb:hover { background-color: #6b7280; }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #4b5563; }
+
+        /* Firefox: scrollbar-color */
+        :root { scrollbar-width: thin; scrollbar-color: #e5e7eb transparent; }
+        .dark { scrollbar-color: #4b5563 transparent; }
+    </style>
+
+    <script>
+        // Sayfa yüklenmeden önce tema tercihini uygula (FOUC önlemek için)
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen flex flex-col md:flex-row overflow-hidden transition-colors duration-200">
+    
+    <div id="global-loader" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm transition-opacity duration-300">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-indigo-400"></div>
+    </div>
+
+    <div class="md:hidden fixed top-0 left-0 w-full h-16 bg-indigo-600 dark:bg-indigo-900 text-white px-4 flex items-center justify-between shadow-md z-50 flex-shrink-0">
+        <span class="font-bold text-xl">Englico</span>
+        <button id="mobile-menu-btn" class="focus:outline-none p-2 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-800 transition">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+    </div>
+
+    <div id="sidebar" class="bg-white dark:bg-gray-800 w-54 border-r border-gray-200 dark:border-gray-700 flex flex-col fixed top-16 bottom-0 left-0 transform -translate-x-full md:translate-x-0 sidebar-transition z-40 shadow-xl md:shadow-none md:relative md:top-0 md:h-screen group transition-colors duration-200">
+        
+        <div class="hidden md:flex p-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0 relative header-content items-center justify-between h-16">
+            <h1 class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 hidden md:block whitespace-nowrap overflow-hidden">
+                <a href="/" class="flex items-center">
+                    <span class="logo-icon text-2xl">EC</span>
+                    <span class="logo-text">Englico</span>
+                </a>
+            </h1>
+            
+            <button id="desktop-toggle-btn" class="hidden md:flex desktop-toggle items-center justify-center w-7 h-7 rounded-full bg-indigo-50 dark:bg-gray-700 text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-gray-600 border border-indigo-100 dark:border-gray-600 transition shadow-sm">
+                <svg id="toggle-icon" class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto overflow-x-hidden p-2 custom-scrollbar pb-4">
+            <nav class="space-y-1">
+                <a href="{{url_for('dashboard.dashboard_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Ana Sayfa">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Ana Sayfa</span>
+                </a>
+
+                <a href="{{url_for('main.index')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Çeviri ve Gramer">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                    </svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Çeviri & Gramer</span>
+                </a>
+
+                <a href="{{url_for('main.practice')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Günlük Senaryolar">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Günlük Senaryolar</span>
+                </a>
+
+                <a href="{{url_for('main.vocab_practice')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Sözcük Pratiği">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Sözcük Pratiği</span>
+                </a>
+
+                <a href="{{url_for('main.all_vocabs_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Tüm Kelimeler">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Tüm Kelimeler</span>
+                </a>
+
+                <a href="{{url_for('listening.listening_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Dinleme Alıştırması">
+                    <svg class="w-5 h-5 min-w-[20px]" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M20 16v-4a8 8 0 1 0-16 0v4m16 0v2a2 2 0 0 1-2 2h-2v-6h2a2 2 0 0 1 2 2ZM4 16v2a2 2 0 0 0 2 2h2v-6H6a2 2 0 0 0-2 2Z"/>
+                    </svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Dinleme Alıştırması</span>
+                </a>
+
+                <a href="{{url_for('speaking.speaking_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Telaffuz Alıştırması">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Konuşma Alıştırması</span>
+                </a>
+
+                <a href="{{url_for('writing.writing_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Yazım Alıştırması">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Yazım Alıştırması</span>
+                </a>
+                 <a href="{{url_for('reading.reading_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Okuma Alıştırması">
+                   <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                   <span class="link-text ml-3 text-sm whitespace-nowrap">Okuma Alıştırması</span>
+                </a>
+                
+                {% if session.get('role') == 'admin' %}
+                <a href="{{url_for('admin.vocab_admin_page')}}" class="flex items-center px-3 py-2.5 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition group w-full" title="Yönetim">
+                    <svg class="w-5 h-5 min-w-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span class="link-text ml-3 text-sm whitespace-nowrap">Yönetim</span>
+                </a>
+                {% endif %}
+
+                {% block sidebar_extra %}{% endblock %}
+            </nav>
+        </div>
+
+       <div class="sidebar-footer p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+    
+    <div class="theme-profile-box flex items-center gap-2 mb-3">
+        
+        <button id="theme-toggle" class="flex-1 flex items-center justify-center gap-2 h-10 px-3 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm" title="Tema Değiştir">
+            <svg id="theme-toggle-light-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+            <svg id="theme-toggle-dark-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+
+        </button>
+
+        <a href="{{ url_for('main.profile_page') }}" class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition shadow-sm group" title="Profil Ayarları">
+            <svg class="w-5 h-5 group-hover:rotate-90 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </a>
+    </div>
+
+    <a href="{{url_for('auth.logout')}}" class="logout-btn flex items-center justify-center w-full h-10 px-3 rounded-lg border dark:border-red-900/50 dark:bg-red-900/10 text-red-600 dark:text-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition font-medium text-sm group">
+        <svg class="w-5 h-5 min-w-[20px] group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+        <span class="auth-btn-text ml-2 whitespace-nowrap">Çıkış Yap</span>
+    </a>
+    
+</div>
+    </div>
+
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 hidden md:hidden transition-all duration-300"></div>
+    
+    <div class="flex-1 flex flex-col h-full overflow-hidden w-full relative pt-16 md:pt-0">
+        <main class="flex-1 overflow-y-auto p-4 md:p-8 scroll-smooth custom-scrollbar">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <script>
+        // DOM Elementlerini Seç
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const desktopToggleBtn = document.getElementById('desktop-toggle-btn');
+        const toggleIcon = document.getElementById('toggle-icon');
+
+        // --- DARK MODE LOGIC ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // Sayfa yüklendiğinde ikon durumunu ayarla
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        // Butona tıklama olayı
+        themeToggleBtn.addEventListener('click', function() {
+            // İkonları değiştir
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+
+            // Eğer localStorage'da varsa
+            if (localStorage.getItem('color-theme')) {
+                if (localStorage.getItem('color-theme') === 'light') {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                }
+            } else {
+                // Yoksa sistem tercihine göre tersine çevir
+                if (document.documentElement.classList.contains('dark')) {
+                    document.documentElement.classList.remove('dark');
+                    localStorage.setItem('color-theme', 'light');
+                } else {
+                    document.documentElement.classList.add('dark');
+                    localStorage.setItem('color-theme', 'dark');
+                }
+            }
+        });
+
+        // --- MOBIL MENU ---
+        function toggleMobileMenu() {
+            const isClosed = sidebar.classList.contains('-translate-x-full');
+            if (isClosed) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+        if(mobileBtn){
+            mobileBtn.addEventListener('click', toggleMobileMenu);
+            overlay.addEventListener('click', toggleMobileMenu);
+        }
+
+        // --- SIDEBAR COLLAPSE ---
+        const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (isCollapsed) { applyCollapseState(true); }
+
+        function applyCollapseState(collapsed) {
+            if (collapsed) {
+                sidebar.classList.add('sidebar-collapsed');
+                if(toggleIcon) toggleIcon.style.transform = 'rotate(180deg)';
+            } else {
+                sidebar.classList.remove('sidebar-collapsed');
+                if(toggleIcon) toggleIcon.style.transform = 'rotate(0deg)';
+            }
+        }
+        if(desktopToggleBtn) {
+            desktopToggleBtn.addEventListener('click', () => {
+                const currentlyCollapsed = sidebar.classList.contains('sidebar-collapsed');
+                const newState = !currentlyCollapsed;
+                applyCollapseState(newState);
+                localStorage.setItem('sidebarCollapsed', newState);
+            });
+        }
+
+        // --- LOADER ---
+        // Not: Pronunciation.html'de çakışmaması için burada global-loader olarak id'yi özellikle kullandık
+        const loader = document.getElementById('global-loader');
+        if(loader) {
+            window.addEventListener('beforeunload', function() { loader.classList.remove('hidden'); });
+            window.addEventListener('pageshow', function() { loader.classList.add('hidden'); });
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function() { loader.classList.remove('hidden'); });
+            }); 
+        }   
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

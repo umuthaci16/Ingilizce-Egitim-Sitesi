@@ -1,0 +1,107 @@
+{
+  "A1": {
+    "text": "Famous people’s first jobs\n\nNot all famous people were born into famous families. A lot of them had normal lives before becoming famous. They also had jobs like the rest of us. Here are just a few:\n\nFormer President Obama worked at an ice-cream parlour selling ice-cream cones. He was in high school in Honolulu, Hawaii and said it was quite hard. He also said that the job taught him about responsibility, hard work and how to spend time with work, friends and family.\n\nBrad Pitt had a weird job when he was younger. He worked as a chicken! That’s right. He worked at a restaurant called El Pollo Loco in Hollywood, and his job was to dress up like a chicken and wave at the cars on the road. In fact, if you go on a “See the Stars” tour in Hollywood, many of them will take you past the same restaurant where Brad used to work.\n\nMaybe the strangest path in life was that of Pope Francis. When he was young in Argentina, he worked several jobs before joining the Jesuits and dedicating his life to religion. He worked as a cleaner sweeping floors, a chemical tester at a laboratory and as a bouncer at a bar! Yes, the pope was the person responsible for security at a bar in case anything wrong happened. Can you imagine?!",
+    "questions": [
+      {
+        "question": "What did Barack Obama say about his first job?",
+        "options": [
+          "It was easy and fun",
+          "It helped him become famous",
+          "It taught him responsibility and hard work",
+          "It made him dislike working"
+        ],
+        "correct_index": 2
+      },
+      {
+        "question": "What was unusual about Brad Pitt’s first job?",
+        "options": [
+          "He worked in a laboratory",
+          "He worked while studying in high school",
+          "He dressed up as a chicken at a restaurant",
+          "He worked as a tour guide in Hollywood"
+        ],
+        "correct_index": 2
+      },
+      {
+        "question": "Which job did Pope Francis NOT do when he was young?",
+        "options": [
+          "Cleaner",
+          "Chemical tester",
+          "Bouncer",
+          "Teacher"
+        ],
+        "correct_index": 3
+      }
+    ]
+  },
+  "B1": {
+    "text": "The Arm of Liberty\n\nThe Statue of Liberty is one of the most famous symbols of the United States. It was built to celebrate the end of slavery and later became a symbol of freedom for immigrants. The statue shows Libertas, the Roman goddess of liberty, holding a torch that represents hope and freedom.\n\nThe idea for the statue came from Édouard de Laboulaye after the American Civil War. He and other supporters raised money and chose Frédéric-Auguste Bartholdi to design it. Bartholdi worked with engineer Gustave Eiffel, who designed a strong metal structure so the statue could stand safely in strong winds.\n\nYears later, new documents were discovered in Paris. These papers showed that Bartholdi changed Eiffel’s original plans. In the original design, Liberty’s arm was thicker and more upright. Bartholdi made it slimmer and more attractive, but also weaker.\n\nBecause of these changes, the arm has caused problems over time. After an explosion in 1916 damaged the statue, visitors were no longer allowed to climb up to the torch. The newly discovered plans confirm that the changes to the arm were intentional and not construction mistakes.",
+    "questions": [
+      {
+        "question": "What was the original purpose of building the Statue of Liberty?",
+        "options": [
+          "To welcome immigrants to New York",
+          "To show French engineering skills",
+          "To celebrate the end of slavery",
+          "To honor Gustave Eiffel"
+        ],
+        "correct_index": 2
+      },
+      {
+        "question": "Why did Gustave Eiffel design a strong metal structure for the statue?",
+        "options": [
+          "Because the statue was very tall",
+          "Because copper is a weak material",
+          "Because New York Harbor has strong winds",
+          "Because visitors could climb inside"
+        ],
+        "correct_index": 2
+      },
+      {
+        "question": "What did the newly discovered documents reveal?",
+        "options": [
+          "The statue was built in the wrong place",
+          "Bartholdi changed Eiffel’s original arm design",
+          "Eiffel made mistakes in his calculations",
+          "The statue was damaged during construction"
+        ],
+        "correct_index": 1
+      }
+    ]
+  },
+  "C1": {
+    "text": "Sustainable Supermarkets\n\nMajor supermarket chains have faced increasing criticism over unethical practices such as food waste, underpaying suppliers, and excessive plastic packaging that harms the environment. In response to public pressure, several large UK supermarkets have committed to reducing plastic waste by pledging to reuse, recycle, or compost all plastic packaging by 2025, with some even promising to remove plastic entirely from their own-brand products.\n\nDespite these pledges, efforts to reduce food waste remain limited. Although supermarkets donate surplus food, charities report that only a small fraction of total surplus is redistributed. A lack of transparency around waste figures further prevents the development of effective, large-scale solutions.\n\nMeanwhile, smaller retailers are offering more sustainable alternatives. Plastic-free shops encourage customers to bring reusable containers, while online grocers source directly from local farmers, reducing surplus and emissions through efficient logistics. These models suggest that meaningful change may depend on supermarkets learning from smaller, more innovative businesses.",
+    "questions": [
+      {
+        "question": "What is the writer’s main criticism of large supermarkets’ response to food waste?",
+        "options": [
+          "Their donation systems are too complex for charities to use",
+          "Their efforts are insufficient and poorly supported by transparent data",
+          "They focus too much on plastic instead of food waste",
+          "They rely too heavily on government regulation"
+        ],
+        "correct_index": 1
+      },
+      {
+        "question": "What does the phrase “operate under a veil of secrecy” most nearly imply in the text?",
+        "options": [
+          "Supermarkets intentionally hide unethical behavior from the public",
+          "Supermarkets lack accurate records of their own waste",
+          "Supermarkets avoid sharing detailed information about waste levels",
+          "Supermarkets are legally prevented from publishing waste data"
+        ],
+        "correct_index": 2
+      },
+      {
+        "question": "Why are smaller retailers presented as significant in the final paragraph?",
+        "options": [
+          "They have already solved the problems of food and plastic waste",
+          "They are more profitable than large supermarket chains",
+          "They demonstrate practical models that large supermarkets could adopt",
+          "They serve a niche market uninterested in convenience"
+        ],
+        "correct_index": 2
+      }
+    ]
+  }
+}

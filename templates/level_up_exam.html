@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seviye Atlama Sınavı</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Manuel kontrol için 'class' modu
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#1f2937',
+                        darkcard: '#374151',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Sınav Çizgisi */
+        .exam-border { border-top: 4px solid #ef4444; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 min-h-screen flex flex-col py-6 px-4">
+
+    <header class="max-w-5xl mx-auto w-full flex justify-between items-center mb-6 bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border-l-4 border-red-500 transition-colors">
+        <div>
+            <h1 class="text-xl font-bold text-gray-900 dark:text-white uppercase tracking-wide" id="exam-title">LOADING...</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Seviye Atlama Sınavı</p>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <button onclick="toggleTheme()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 transition">
+                <i id="theme-icon" data-lucide="moon" class="w-5 h-5"></i>
+            </button>
+
+            <div class="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg border border-red-100 dark:border-red-900/50">
+                <i data-lucide="timer" class="w-5 h-5 text-red-600 dark:text-red-400"></i>
+                <span id="timer" class="text-2xl font-mono font-bold text-red-700 dark:text-red-400">00:00</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl overflow-hidden min-h-[600px] relative exam-border transition-colors">
+        
+        <div id="loader" class="absolute inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col items-center justify-center transition-colors">
+            <div class="animate-spin rounded-full h-12 w-12 border-4 border-red-600 border-t-transparent"></div>
+            <p id="loader-text" class="mt-4 text-gray-600 dark:text-gray-300 font-medium animate-pulse">Sınav Hazırlanıyor...</p>
+        </div>
+
+        <div id="content-area" class="p-8 md:p-10 fade-in hidden h-full flex flex-col">
+            </div>
+
+    </main>
+
+    <div id="result-modal" class="fixed inset-0 z-[60] bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 w-full max-w-md rounded-2xl p-8 text-center shadow-2xl transform transition-all scale-100">
+            <div id="res-icon" class="w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4"></div>
+            <h2 id="res-title" class="text-3xl font-bold mb-2 dark:text-white"></h2>
+            <p id="res-msg" class="text-gray-600 dark:text-gray-300 mb-6 text-lg"></p>
+            
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl mb-6 text-left text-sm text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                <p class="font-bold mb-1">Değerlendirme:</p>
+                <p id="res-feedback" class="italic"></p>
+            </div>
+
+            <button onclick="window.location.href='/'" class="w-full py-3 bg-gray-900 dark:bg-black text-white font-bold rounded-xl hover:bg-gray-800 transition">
+                Ana Sayfaya Dön
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const skill = urlParams.get('skill');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        let examData = null;
+        let examLevel = "";
+        let timerInterval;
+        let timeLeft = 0;
+        let mediaRecorders = {};
+        let audioBlobs = {}; 
+
+        // --- THEME LOGIC ---
+        function initTheme() {
+            // Kayıtlı tema var mı veya sistem tercihi dark mı?
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+                updateThemeIcon('sun');
+            } else {
+                document.documentElement.classList.remove('dark');
+                updateThemeIcon('moon');
+            }
+        }
+
+        function toggleTheme() {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.theme = 'light';
+                updateThemeIcon('moon');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.theme = 'dark';
+                updateThemeIcon('sun');
+            }
+        }
+
+        function updateThemeIcon(type) {
+            const icon = document.getElementById('theme-icon');
+            // Lucide ikonunu değiştir (data-lucide attribute'unu güncelle ve yeniden render et)
+            icon.setAttribute('data-lucide', type);
+            lucide.createIcons();
+        }
+
+        // --- INIT ---
+        window.addEventListener('DOMContentLoaded', async () => {
+            initTheme(); // Temayı uygula
+            lucide.createIcons();
+            
+            if(!skill) { alert("Hata: Skill parametresi eksik!"); window.location.href='/'; return; }
+            await checkStatus();
+        });
+
+        // --- EXAM LOGIC ---
+        async function checkStatus() {
+            try {
+                const res = await fetch(`/api/exam/status?skill=${skill}`);
+                const data = await res.json();
+                
+                if(!data.can_enter) {
+                    document.body.innerHTML = `
+                        <div class="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+                            <div class="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-xl text-center max-w-lg">
+                                <div class="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i data-lucide="lock" class="w-8 h-8"></i>
+                                </div>
+                                <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Sınav Kilitli</h1>
+                                <p class="text-gray-600 dark:text-gray-300 mb-6">${data.message}</p>
+                                <a href="/" class="px-6 py-2 bg-gray-900 dark:bg-black text-white rounded-lg font-bold">Geri Dön</a>
+                            </div>
+                        </div>`;
+                    lucide.createIcons();
+                    return;
+                }
+                
+                examLevel = data.current_level;
+                document.getElementById('exam-title').innerText = `${skill.toUpperCase()} ${examLevel} SINAVI`;
+                await startExam();
+
+            } catch(e) { console.error(e); alert("Bağlantı hatası"); }
+        }
+
+        async function startExam() {
+            try {
+                const loaderText = document.getElementById('loader-text');
+                if(loaderText) loaderText.innerText = "Yapay Zeka Sınav Sorularını Hazırlıyor...";
+                document.getElementById('loader').classList.remove('hidden');
+
+                const res = await fetch('/api/exam/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': csrfToken},
+                    body: JSON.stringify({ skill: skill, level: examLevel })
+                });
+                examData = await res.json();
+                
+                if(examData.error) throw new Error(examData.error);
+
+                document.getElementById('loader').classList.add('hidden');
+                document.getElementById('content-area').classList.remove('hidden');
+                
+                renderExamUI();
+                startTimer(skill === 'writing' ? 30 : 20); // Yazma için 30 dk, diğerleri için 20 dk
+
+            } catch(e) {
+                alert("Sınav oluşturulamadı: " + e.message);
+                window.location.href='/';
+            }
+        }
+
+        function startTimer(minutes) {
+            timeLeft = minutes * 60;
+            updateTimerDisplay();
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Süre doldu! Sınav otomatik gönderiliyor.");
+                    submitExam();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const s = (timeLeft % 60).toString().padStart(2, '0');
+            const el = document.getElementById('timer');
+            if(el) {
+                el.innerText = `${m}:${s}`;
+                if(timeLeft < 300) el.classList.add('text-red-600', 'animate-pulse');
+            }
+        }
+
+        // ================= UI RENDERERS (DARK MODE DESTEKLİ) =================
+
+        function renderExamUI() {
+            const container = document.getElementById('content-area');
+            container.innerHTML = '';
+
+            if(skill === 'reading' || skill === 'listening') {
+                renderReadingListening(container);
+            } else if (skill === 'writing') {
+                renderWriting(container);
+            } else if (skill === 'speaking') {
+                renderSpeaking(container);
+            }
+            lucide.createIcons();
+        }
+
+        function renderReadingListening(container) {
+            let html = `<div class="space-y-12">`;
+            
+            examData.parts.forEach((part, idx) => {
+                let contentBlock = '';
+                if(skill === 'listening') {
+                    contentBlock = `
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-xl border border-indigo-100 dark:border-indigo-800 flex items-center gap-4 mb-6">
+                            <button onclick="speakText(this, '${part.text.replace(/'/g, "\\'")}')" class="w-12 h-12 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full flex items-center justify-center transition shadow-lg">
+                                <i data-lucide="play" class="w-6 h-6 ml-1"></i>
+                            </button>
+                            <div>
+                                <h3 class="font-bold text-indigo-900 dark:text-indigo-300">Part ${part.id} Audio Track</h3>
+                                <p class="text-sm text-indigo-600 dark:text-indigo-400">Click to listen (Max 2 times)</p>
+                            </div>
+                        </div>`;
+                } else {
+                    contentBlock = `
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-8 rounded-xl border border-gray-200 dark:border-gray-600 text-lg leading-relaxed font-serif text-gray-800 dark:text-gray-200 mb-8 shadow-inner">
+                            ${part.text.replace(/\n/g, '<br>')}
+                        </div>`;
+                }
+
+                let questionsHtml = '';
+                
+                part.mc_questions.forEach((q, i) => {
+                    const opts = q.options.map((o, oi) => 
+                        `<label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded transition"><input type="radio" name="p${part.id}_mc_${i}" value="${o}" class="w-4 h-4 text-red-600 accent-red-600"> <span class="dark:text-gray-300">${o}</span></label>`
+                    ).join('');
+                    questionsHtml += `<div class="mb-4"><p class="font-bold mb-2 dark:text-gray-200">${i+1}. ${q.question}</p><div class="space-y-1">${opts}</div></div>`;
+                });
+
+                part.fib_questions.forEach((q, i) => {
+                    questionsHtml += `<div class="mb-4"><p class="font-bold mb-2 dark:text-gray-200">${i+1}. ${q.sentence.replace('___', '<input type="text" name="p'+part.id+'_fib_'+i+'" class="border-b-2 border-gray-300 dark:border-gray-500 bg-transparent px-2 py-0 w-32 focus:border-red-500 outline-none text-center font-bold text-indigo-600 dark:text-indigo-400">')}</p></div>`;
+                });
+
+                part.tf_questions.forEach((q, i) => {
+                    questionsHtml += `
+                        <div class="mb-4 flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2">
+                            <p class="text-gray-800 dark:text-gray-300 w-2/3">${q.statement}</p>
+                            <div class="flex gap-4 text-sm font-medium dark:text-gray-400">
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="p${part.id}_tf_${i}" value="True" class="text-red-600 accent-red-600"> T</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="p${part.id}_tf_${i}" value="False" class="text-red-600 accent-red-600"> F</label>
+                                <label class="flex items-center gap-1 cursor-pointer"><input type="radio" name="p${part.id}_tf_${i}" value="Not Given" class="text-red-600 accent-red-600"> NG</label>
+                            </div>
+                        </div>`;
+                });
+
+                let summaryHtml = `
+                    <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/20 p-6 rounded-xl border border-yellow-200 dark:border-yellow-900/50">
+                        <h4 class="font-bold text-yellow-800 dark:text-yellow-500 mb-2">Metnin özetini yazın.</h4>
+                        <p class="text-sm text-yellow-700 dark:text-yellow-600 mb-3">Metinde ne anlatılıyor? Anladıklarınızı Türkçe olarak yazın.</p>
+                        <textarea id="p${part.id}_summary" class="w-full h-24 p-3 border border-yellow-300 dark:border-yellow-700 bg-white dark:bg-gray-800 dark:text-gray-200 rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none resize-none" placeholder="Özetinizi buraya yazın..."></textarea>
+                    </div>`;
+
+                html += `
+                    <div class="border-b-4 border-gray-200 dark:border-gray-700 pb-10 last:border-0">
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="bg-gray-900 dark:bg-black text-white text-sm px-3 py-1 rounded-full">Part ${part.id}</span>
+                        </h2>
+                        ${contentBlock}
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div><h3 class="font-bold text-lg mb-4 text-gray-700 dark:text-gray-400 uppercase">Sorular</h3>${questionsHtml}</div>
+                            <div>${summaryHtml}</div>
+                        </div>
+                    </div>`;
+            });
+            
+            html += `<div class="mt-8 flex justify-end"><button onclick="submitExam()" class="px-12 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-xl transition transform hover:scale-105">SINAVI BİTİR</button></div></div>`;
+            container.innerHTML = html;
+        }
+
+        function renderWriting(container) {
+            let html = `<div class="space-y-12">`;
+            examData.tasks.forEach(task => {
+                html += `
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm">
+                        <span class="bg-indigo-100 dark:bg-indigo-900/40 text-indigo-800 dark:text-indigo-300 text-xs font-bold px-3 py-1 rounded uppercase mb-2 inline-block">Task ${task.id}</span>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">${task.topic}</h3>
+                        <div class="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm p-4 rounded-lg mb-6 border border-red-100 dark:border-red-900/30">
+                            <strong>Constraints:</strong> ${task.constraints}
+                        </div>
+                        <textarea id="task_${task.id}_essay" class="w-full h-64 p-5 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl focus:ring-4 focus:ring-indigo-100 dark:focus:ring-indigo-900 focus:border-indigo-500 outline-none text-lg transition" placeholder="Cevabınızı İngilizce olarak yazın."></textarea>
+                    </div>`;
+            });
+            html += `<div class="mt-8 flex justify-end"><button onclick="submitExam()" class="px-12 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-xl transition transform hover:scale-105">SINAVI BİTİR</button></div></div>`;
+            container.innerHTML = html;
+        }
+
+        function renderSpeaking(container) {
+            let html = `<div class="space-y-12 max-w-3xl mx-auto">`;
+            examData.tasks.forEach(task => {
+                let promptText = task.type === 'interview' ? task.prompt : task.prompt.replace(/-/g, '<br>• ');
+                
+                html += `
+                    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-8 shadow-sm text-center">
+                        <span class="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 text-xs font-bold px-3 py-1 rounded uppercase mb-4 inline-block">Task ${task.id}: ${task.type}</span>
+                        <div class="text-xl font-medium text-gray-800 dark:text-gray-200 mb-8 leading-relaxed">${promptText}</div>
+                        
+                        <div class="flex flex-col items-center gap-4">
+                            <button id="btn_rec_${task.id}" onclick="toggleRecord(${task.id})" class="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center hover:bg-gray-300 dark:hover:bg-gray-600 transition group relative">
+                                <i data-lucide="mic" class="w-8 h-8 text-gray-600 dark:text-gray-300 group-hover:text-gray-800 dark:group-hover:text-white"></i>
+                                <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full animate-ping hidden" id="pulse_${task.id}"></span>
+                            </button>
+                            <p class="text-sm font-bold text-gray-500 dark:text-gray-400" id="status_${task.id}">Bas Konuş</p>
+                            <audio id="audio_${task.id}" controls class="hidden w-full max-w-xs mt-2"></audio>
+                        </div>
+                    </div>`;
+            });
+            html += `<div class="mt-8 flex justify-end"><button onclick="submitExam()" class="px-12 py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 shadow-xl transition transform hover:scale-105">SINAVI BİTİR</button></div></div>`;
+            container.innerHTML = html;
+        }
+
+        // ================= HELPERS & SUBMIT =================
+
+        function speakText(btn, text) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = 'en-US';
+            u.rate = 0.9;
+            btn.classList.add('animate-pulse', 'bg-red-600');
+            u.onend = () => btn.classList.remove('animate-pulse', 'bg-red-600');
+            window.speechSynthesis.speak(u);
+        }
+
+        function toggleRecord(id) {
+            const btn = document.getElementById(`btn_rec_${id}`);
+            const pulse = document.getElementById(`pulse_${id}`);
+            const status = document.getElementById(`status_${id}`);
+            const audio = document.getElementById(`audio_${id}`);
+
+            if(!mediaRecorders[id] || mediaRecorders[id].state === 'inactive') {
+                navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
+                    const recorder = new MediaRecorder(stream);
+                    const chunks = [];
+                    recorder.ondataavailable = e => chunks.push(e.data);
+                    recorder.onstop = () => {
+                        const blob = new Blob(chunks, {type:'audio/webm'});
+                        audioBlobs[id] = blob;
+                        audio.src = URL.createObjectURL(blob);
+                        audio.classList.remove('hidden');
+                        status.innerText = "Kaydedildi";
+                        btn.classList.remove('bg-red-100', 'text-red-600');
+                        pulse.classList.add('hidden');
+                    };
+                    recorder.start();
+                    mediaRecorders[id] = recorder;
+                    status.innerText = "Kaydediliyor...";
+                    btn.classList.add('bg-red-100', 'text-red-600');
+                    pulse.classList.remove('hidden');
+                });
+            } else {
+                mediaRecorders[id].stop();
+            }
+        }
+        
+        async function submitExam() {
+            clearInterval(timerInterval); 
+            const loaderText = document.getElementById('loader-text');
+            if(loaderText) loaderText.innerText = "Cevaplarınız Değerlendiriliyor...";
+            document.getElementById('loader').classList.remove('hidden');
+            
+            let payload;
+            let isMultipart = false;
+
+            // Veriyi Hazırla (Mevcut mantık)
+            if(skill === 'reading' || skill === 'listening') {
+                 const answers = examData.parts.map(part => {
+                    const mc = part.mc_questions.map((q, i) => ({
+                        user: document.querySelector(`input[name="p${part.id}_mc_${i}"]:checked`)?.value || "",
+                        correct: q.options[q.correct_index]
+                    }));
+                    const fib = part.fib_questions.map((q, i) => ({
+                        user: document.querySelector(`input[name="p${part.id}_fib_${i}"]`)?.value || "",
+                        correct: q.correct_word
+                    }));
+                    const tf = part.tf_questions.map((q, i) => ({
+                        user: document.querySelector(`input[name="p${part.id}_tf_${i}"]:checked`)?.value || "",
+                        correct: q.answer
+                    }));
+                    return {
+                        id: part.id, text: part.text, mc_answers: mc, fib_answers: fib, tf_answers: tf,
+                        user_summary: document.getElementById(`p${part.id}_summary`)?.value || ""
+                    };
+                });
+                payload = JSON.stringify({ skill: skill, level: examLevel, answers: answers });
+
+            } else if (skill === 'writing') {
+                 const tasks = examData.tasks.map(t => ({
+                    topic: t.topic, constraints: t.constraints,
+                    answer: document.getElementById(`task_${t.id}_essay`).value
+                }));
+                payload = JSON.stringify({ skill: skill, level: examLevel, tasks: tasks });
+
+            } else if (skill === 'speaking') {
+                isMultipart = true;
+                payload = new FormData();
+                payload.append('skill', skill);
+                payload.append('level', examLevel);
+                examData.tasks.forEach(t => {
+                    if(audioBlobs[t.id]) {
+                        payload.append(`audio_task_${t.id}`, audioBlobs[t.id], `task${t.id}.webm`);
+                        payload.append(`prompt_task_${t.id}`, t.type === 'interview' ? t.prompt : t.prompt);
+                    }
+                });
+            }
+
+            try {
+                const headers = {'X-CSRFToken': csrfToken};
+                if(!isMultipart) headers['Content-Type'] = 'application/json';
+
+                const res = await fetch('/api/exam/submit', { method: 'POST', headers: headers, body: payload });
+                const result = await res.json();
+                
+                showResult(result);
+
+            } catch(e) {
+                console.error(e);
+                alert("Gönderim hatası!");
+                document.getElementById('loader').classList.add('hidden');
+            }
+        }
+
+        function showResult(data) {
+            document.getElementById('loader').classList.add('hidden');
+
+            const modal = document.getElementById('result-modal');
+            const icon = document.getElementById('res-icon');
+            const title = document.getElementById('res-title');
+            const msg = document.getElementById('res-msg');
+            const fb = document.getElementById('res-feedback');
+
+            if(data.passed) {
+                icon.className = "w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 bg-green-100 text-green-600";
+                icon.innerHTML = '<i data-lucide="check" class="w-10 h-10"></i>';
+                title.innerText = "TEBRİKLER!";
+                title.className = "text-3xl font-bold mb-2 text-green-700 dark:text-green-400";
+                msg.innerText = `Harika! Sınavı ${data.score} puanla geçtiniz. Yeni seviyeniz: ${data.new_level}. Böyle devam et!`;
+            } else {
+                icon.className = "w-20 h-20 mx-auto rounded-full flex items-center justify-center mb-4 bg-red-100 text-red-600";
+                icon.innerHTML = '<i data-lucide="x" class="w-10 h-10"></i>';
+                title.innerText = "BAŞARISIZ";
+                title.className = "text-3xl font-bold mb-2 text-red-700 dark:text-red-400";
+                msg.innerText = `Puanınız: ${data.score}. Baraj 70 puan. ${data.penalty?.dropped_xp || 0} XP kaybettiniz. Hiç moral bozmak yok, çalışmaya devam edin!`;
+            }
+
+            fb.innerText = data.details || "Detay yok.";
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+            
+            if(data.passed && window.confetti) confetti();
+        }
+
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</body>
+</html>

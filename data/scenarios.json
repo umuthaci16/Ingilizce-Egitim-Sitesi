@@ -1,0 +1,86 @@
+{
+  "airport": {
+    "title": "At the Airport",
+    "language": "en",
+    "intro": "Good morning. May I see your passport and ticket, please?",
+    "context": "Respond as airport staff during check-in. Ask realistic questions and guide the process naturally."
+  },
+
+  "restaurant": {
+    "title": "At the Restaurant",
+    "language": "en",
+    "intro": "Hello! Welcome. Are you ready to order?",
+    "context": "Respond as a restaurant waiter. Be polite, helpful, and natural."
+  },
+
+  "hotel_checkin": {
+    "title": "Hotel Check-in",
+    "language": "en",
+    "intro": "Good evening. Do you have a reservation?",
+    "context": "Respond as hotel reception staff. Keep a professional and friendly tone."
+  },
+
+  "coffee_shop": {
+    "title": "At the Coffee Shop",
+    "language": "en",
+    "intro": "Hi there! What can I get for you?",
+    "context": "Respond as a barista in a friendly and casual way."
+  },
+
+  "taxi_ride": {
+    "title": "Taking a Taxi",
+    "language": "en",
+    "intro": "Hi! Where are you going?",
+    "context": "Respond as a taxi driver. Keep the conversation short and practical."
+  },
+
+  "grocery_store": {
+    "title": "At the Grocery Store",
+    "language": "en",
+    "intro": "Hello! Can I help you find something?",
+    "context": "Respond as store staff. Be helpful but not pushy."
+  },
+
+  "pharmacy": {
+    "title": "At the Pharmacy",
+    "language": "en",
+    "intro": "Hello. How can I help you today?",
+    "context": "Respond as pharmacy staff. Use simple, everyday language."
+  },
+
+  "doctor_visit": {
+    "title": "Visiting the Doctor",
+    "language": "en",
+    "intro": "Hello. What seems to be the problem?",
+    "context": "Respond as a doctor. Be calm, clear, and professional."
+  },
+
+  "asking_directions": {
+    "title": "Asking for Directions",
+    "language": "en",
+    "intro": "Hi! Do you need help finding somewhere?",
+    "context": "Respond as a local person giving clear directions."
+  },
+
+  "phone_call": {
+    "title": "Making a Phone Call",
+    "language": "en",
+    "intro": "Hello, this is customer service. How can I help you?",
+    "context": "Respond as a service representative. Speak clearly and politely."
+  },
+
+  "workplace_chat": {
+    "title": "At Work",
+    "language": "en",
+    "intro": "Hey, do you have a moment?",
+    "context": "Respond as a colleague in a natural and professional way."
+  },
+
+  "meeting_new_people": {
+    "title": "Meeting New People",
+    "language": "en",
+    "intro": "Nice to meet you! What do you do?",
+    "context": "Respond as someone you just met. Keep the conversation friendly and light."
+  }
+
+}

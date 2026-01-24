@@ -1,0 +1,177 @@
+{% extends "layout.html" %}
+
+{% block title %}Kullanıcı Paneli{% endblock %}
+
+{% block extra_css %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto pb-10">
+    
+    <div class="mb-8">
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Hoş Geldin {{ username }}! </h2>
+        <p class="text-gray-500 dark:text-gray-400 mt-1">İngilizce gelişim yolculuğundaki son durumun.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        
+        <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 h-full">
+                {% for skill in data.skills %}
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 relative overflow-hidden group hover:shadow-md transition-all duration-300 flex flex-col justify-between">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{{ skill.name }}</p>
+                            <h3 class="text-3xl font-black text-gray-900 dark:text-white mt-1">{{ skill.level }}</h3>
+                        </div>
+                        <div class="p-3 rounded-xl {{ skill.bg_color }} {{ skill.text_color }}">
+                            <i data-lucide="{{ skill.icon }}" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="relative w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
+                            <div class="absolute top-0 left-0 h-full bg-indigo-500 rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_rgba(99,102,241,0.5)]" style="width: {{ skill.progress }}%"></div>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-gray-500 dark:text-gray-400">
+                            <span>{{ skill.xp }} XP</span>
+                            <span>{{ skill.next_xp }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="lg:col-span-1">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Yetenek Analizi</h3>
+                <div class="relative w-full flex-grow flex items-center justify-center min-h-[250px]">
+                    <canvas id="skillsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="w-full">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex items-center justify-between mb-8">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i data-lucide="award" class="w-5 h-5 text-yellow-500"></i> Rozet Koleksiyonu
+                </h3>
+            </div>
+            
+            <div class="space-y-8">
+                {% for group in data.badge_groups %}
+                <div>
+                    <h4 class="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                        {{ group.skill_name }} Rozetleri
+                    </h4>
+                    
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                        {% for badge in group.badges %}
+                        <div class="relative flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-300 group
+                            {% if badge.is_unlocked %}
+                                bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700/50 hover:scale-105 shadow-sm
+                            {% else %}
+                                bg-gray-100 dark:bg-gray-800 border-dashed border-gray-200 dark:border-gray-700 grayscale opacity-40
+                            {% endif %}">
+                            
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center mb-2 
+                                {% if badge.is_unlocked %}
+                                    {{ badge.bg_color }} {{ badge.text_color }}
+                                {% else %}
+                                    bg-gray-200 dark:bg-gray-700 text-gray-400
+                                {% endif %}">
+                                <i data-lucide="{{ badge.is_unlocked and badge.icon or 'lock' }}" class="w-5 h-5"></i>
+                            </div>
+
+                            <p class="font-bold text-[10px] text-center leading-tight mb-1 truncate w-full {{ badge.is_unlocked and 'text-gray-800 dark:text-gray-200' or 'text-gray-400 dark:text-gray-500' }}">
+                                {{ badge.name }}
+                            </p>
+                            
+                            <span class="text-[9px] font-black uppercase tracking-wide px-1.5 py-0.5 rounded {{ badge.is_unlocked and 'bg-white dark:bg-gray-600 text-gray-500 dark:text-gray-300' or 'text-gray-300 dark:text-gray-600' }}">
+                                {{ badge.level }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    if(window.lucide) lucide.createIcons();
+
+    const rawData = {{ data.chart_data | tojson }}; 
+    const ctx = document.getElementById('skillsChart').getContext('2d');
+    
+    let skillsChart = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Reading', 'Listening', 'Writing', 'Speaking'],
+            datasets: [{
+                label: 'Seviye',
+                data: rawData,
+                backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                borderColor: 'rgba(99, 102, 241, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    grid: { circular: true },
+                    pointLabels: { font: { size: 11, weight: '700', family: "'Inter', sans-serif" } },
+                    suggestedMin: 0,
+                    suggestedMax: 5, // C1 = 5 (MAX SEVİYE GÜNCELLENDİ)
+                    ticks: { display: false, stepSize: 1, backdropColor: 'transparent' }
+                }
+            },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            // C2 çıkarıldı, C1 son seviye
+                            const map = {1:'A1', 2:'A2', 3:'B1', 4:'B2', 5:'C1'};
+                            return 'Seviye: ' + (map[context.raw] || 'A1');
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    function updateChartTheme() {
+        const isDark = document.documentElement.classList.contains('dark');
+        const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+        const labelColor = isDark ? '#9ca3af' : '#4b5563';
+        
+        skillsChart.options.scales.r.grid.color = gridColor;
+        skillsChart.options.scales.r.angleLines.color = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+        skillsChart.options.scales.r.pointLabels.color = labelColor;
+        skillsChart.update();
+    }
+
+    updateChartTheme();
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => { if (mutation.attributeName === "class") updateChartTheme(); });
+    });
+    observer.observe(document.documentElement, { attributes: true });
+</script>
+{% endblock %}

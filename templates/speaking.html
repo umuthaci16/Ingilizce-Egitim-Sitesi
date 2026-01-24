@@ -1,0 +1,441 @@
+{% extends "layout.html" %}
+
+{% block title %}Konuşma Alıştırması{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Animasyonlar */
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+    
+    /* Nabız Efekti (Kayıt Sırasında) */
+    @keyframes pulse-ring {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+    .recording-pulse {
+        animation: pulse-ring 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="exam-toast" class="fixed bottom-5 right-5 z-50 hidden animate-bounce">
+    <div class="bg-white border-l-4 border-red-600 rounded-lg shadow-2xl p-6 max-w-sm">
+        <div class="flex items-start gap-4">
+            
+            <div>
+                <h3 class="font-bold text-gray-900 text-lg">Seviye Sınırı!</h3>
+                <p class="text-sm text-gray-600 mt-1">XP limitine ulaştın. Sınava girmezsen bu pratikten XP kazanamayacaksın.</p>
+                
+                <div class="mt-4 flex gap-3">
+                    <a href="/exam_page?skill=speaking" class="px-4 py-2 bg-red-600 text-white text-sm font-bold rounded hover:bg-red-700 transition">
+                        Sınava Gir
+                    </a>
+                    <button onclick="closeToast()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-bold rounded hover:bg-gray-200 transition">
+                        Daha Sonra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="max-w-5xl mx-auto pt-20 pb-6 md:pt-4">
+
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 px-4 md:px-0">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white text-center md:text-left">Konuşma Alıştırması</h2>
+        
+        <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Seviyen: {{ level }}</span>
+            
+        </div>
+    </div>
+
+    <div id="startContainer" class="w-full max-w-5xl mx-auto bg-white dark:bg-gray-800 p-6 md:p-10 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 text-center relative min-h-[400px] flex flex-col items-center justify-center">
+        
+        <div id="start-loader" class="hidden absolute inset-0 w-full h-full bg-white/95 dark:bg-gray-800/95 z-50 flex flex-col items-center justify-center rounded-2xl transition-opacity duration-300">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mb-4"></div>
+            <span class="text-gray-600 dark:text-gray-300 font-medium animate-pulse">Konu hazırlanıyor...</span>
+        </div>
+
+        <div class="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/30 rounded-full flex items-center justify-center mb-6 shadow-sm animate-fade-in">
+            <svg class="w-12 h-12 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+        </div>
+        <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Konuşma Becerini Test Et</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-10 max-w-lg text-lg">
+            Konuşmanı yap ve telaffuz, akıcılık, kelime bilgisi gibi alanlarda detaylı analiz al.
+        </p>
+        
+        <button id="generateBtn" class="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-none transition transform hover:-translate-y-1 active:scale-95">
+            Dersi Başlat
+        </button>
+    </div>
+
+    <div id="activeContent" class="hidden space-y-8 animate-fade-in relative min-h-[400px]">
+        
+        <div id="analysis-loader" class="hidden absolute inset-0 w-full h-full bg-white/90 dark:bg-gray-900/90 z-50 flex flex-col items-center justify-center rounded-2xl transition-opacity duration-300 backdrop-blur-sm">
+            <div class="animate-spin rounded-full h-14 w-14 border-t-4 border-b-4 border-indigo-600 mb-6"></div>
+            <span class="text-gray-700 dark:text-gray-200 font-semibold text-lg animate-pulse text-center px-4">
+                Sesin analiz ediliyor...<br>
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400 mt-2 block">Telaffuz, akıcılık ve gramer puanların hesaplanıyor.</span>
+            </span>
+        </div>
+
+        <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 p-8 rounded-2xl relative overflow-hidden">
+             <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-100 dark:bg-indigo-800/30 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+             
+             <div class="relative z-10 text-center">
+                 <div class="flex justify-between items-start mb-2">
+                    <span class="inline-block px-3 py-1 rounded-full text-xs font-bold bg-indigo-200 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-200 uppercase tracking-wider">KONU</span>
+                     
+                     <button onclick="location.reload()" class="text-xs font-bold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/50 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Farklı Konu
+                     </button>
+                 </div>
+                 
+                 <h3 id="taskTitle" class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">...</h3>
+                 <p id="taskPrompt" class="text-lg text-gray-600 dark:text-gray-300 font-medium max-w-3xl mx-auto">...</p>
+             </div>
+        </div>
+
+        <div class="flex flex-col items-center justify-center py-6">
+            <div class="relative">
+                <button id="recordBtn" class="group relative flex items-center justify-center w-24 h-24 bg-indigo-600 hover:bg-indigo-700 rounded-full transition-all duration-300 focus:outline-none shadow-2xl shadow-indigo-200 dark:shadow-none transform hover:scale-105 active:scale-95">
+                    <svg id="micIcon" class="w-10 h-10 text-white transition-transform group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    <span id="stopIcon" class="hidden w-8 h-8 bg-white rounded-md shadow-sm"></span>
+                </button>
+            </div>
+            <p id="statusText" class="mt-6 text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-4 py-1 rounded-full text-sm">Cevabını kaydetmek için mikrofona bas</p>
+        </div>
+
+    </div>
+
+    <div id="resultArea" class="hidden mt-8 space-y-8 animate-fade-in">
+        
+        <div class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 gap-4">
+                <h4 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                    Algılanan Konuşma
+                </h4>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 font-bold uppercase">Genel Başarı</span>
+                    <span class="bg-indigo-600 text-white px-4 py-1.5 rounded-full text-2xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none">
+                        <span id="scoreTotal">-</span>/100
+                    </span>
+                </div>
+            </div>
+            <p id="userTranscript" class="text-xl text-gray-700 dark:text-gray-300 font-serif italic leading-relaxed pl-4 border-l-4 border-indigo-200 dark:border-indigo-900">...</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <div class="space-y-8">
+                
+                <div class="bg-green-50 dark:bg-green-900/10 p-6 rounded-2xl border border-green-100 dark:border-green-900/30">
+                    <h4 class="text-green-800 dark:text-green-400 font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Native Speaker Nasıl Derdi?
+                    </h4>
+                    <p id="aiCorrection" class="text-green-900 dark:text-green-200 text-lg leading-relaxed">...</p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">İçerik & Dil Analizi (GPT)</h4>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Grammar</div>
+                            <div id="scoreGrammar" class="text-2xl font-black text-gray-800 dark:text-white">-</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Vocabulary</div>
+                            <div id="scoreVocabulary" class="text-2xl font-black text-gray-800 dark:text-white">-</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Coherence</div>
+                            <div id="scoreCoherence" class="text-2xl font-black text-gray-800 dark:text-white">-</div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-gray-500 dark:text-gray-400 uppercase tracking-wider font-bold mb-1">Relevance</div>
+                            <div id="scoreRelevance" class="text-2xl font-black text-gray-800 dark:text-white">-</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800 flex items-center gap-2 mb-6">
+                    <span class="font-bold text-indigo-900 dark:text-indigo-200">Kazanılan XP:</span>
+                    <span id="resXpGain" class="text-xl font-black text-indigo-600 dark:text-indigo-400"></span>
+                </div>
+
+            </div>
+            
+            <div class="space-y-8 flex flex-col">
+                
+                <div class="bg-indigo-50 dark:bg-indigo-900/10 p-6 rounded-2xl border border-indigo-100 dark:border-indigo-900/30 flex-grow">
+                    <h4 class="text-indigo-800 dark:text-indigo-400 font-bold mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Eğitmen Görüşü
+                    </h4>
+                    <p id="aiFeedback" class="text-indigo-900 dark:text-indigo-200 text-lg leading-relaxed">...</p>
+                </div>
+
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30 shadow-sm relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                    <h4 class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-4 pl-2">Ses & Telaffuz Analizi (Azure)</h4>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-blue-600 dark:text-blue-300 uppercase tracking-wider font-bold mb-1">Fluency</div>
+                            <div id="scoreFluency" class="text-2xl font-black text-blue-700 dark:text-blue-200">-</div>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-blue-600 dark:text-blue-300 uppercase tracking-wider font-bold mb-1">Pronunciation</div>
+                            <div id="scorePronunciation" class="text-2xl font-black text-blue-700 dark:text-blue-200">-</div>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-blue-600 dark:text-blue-300 uppercase tracking-wider font-bold mb-1">Accuracy</div>
+                            <div id="scoreAccuracy" class="text-2xl font-black text-blue-700 dark:text-blue-200">-</div>
+                        </div>
+                        <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl text-center">
+                            <div class="text-[10px] text-blue-600 dark:text-blue-300 uppercase tracking-wider font-bold mb-1">Prosody</div>
+                            <div id="scoreProsody" class="text-2xl font-black text-blue-700 dark:text-blue-200">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="flex justify-center pt-6">
+            <button onclick="resetSession()" class="px-8 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 text-gray-800 dark:text-white font-bold rounded-lg transition">
+                Yeni Konu Başlat
+            </button>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let currentPromptText = "";
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Elementler
+        const startContainer = document.getElementById('startContainer');
+        const activeContent = document.getElementById('activeContent');
+        const resultArea = document.getElementById('resultArea');
+        
+        const generateBtn = document.getElementById('generateBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        
+        const micIcon = document.getElementById('micIcon');
+        const stopIcon = document.getElementById('stopIcon');
+        const statusText = document.getElementById('statusText');
+        
+        // Loader Elementleri
+        const startLoader = document.getElementById('start-loader');
+        const analysisLoader = document.getElementById('analysis-loader');
+        const level = "{{ level }}";
+        // --- CORE FONKSİYON: Konu Üretme ---
+        async function generateTopic() {
+            
+            
+            
+            // Start Loader'ı Göster
+            if(startLoader) startLoader.classList.remove('hidden');
+            
+            try {
+                const res = await fetch(`/api/generate_speaking_task?level=${level}`);
+                const data = await res.json();
+                
+                const titleEl = document.getElementById('taskTitle');
+                const promptEl = document.getElementById('taskPrompt');
+                
+                if(titleEl) titleEl.textContent = data.title;
+                if(promptEl) promptEl.textContent = data.task; 
+                currentPromptText = data.task;
+                
+                if(startContainer) startContainer.classList.add('hidden');
+                if(activeContent) activeContent.classList.remove('hidden');
+                if(resultArea) resultArea.classList.add('hidden');
+
+            } catch(e) {
+                alert("Görev oluşturulurken hata: " + e);
+            } finally {
+                if(startLoader) startLoader.classList.add('hidden');
+            }
+        }
+
+        if(generateBtn) generateBtn.addEventListener('click', generateTopic);
+        
+
+        window.resetSession = function() {
+            if(activeContent) activeContent.classList.add('hidden');
+            if(resultArea) resultArea.classList.add('hidden');
+            if(startContainer) startContainer.classList.remove('hidden');
+            
+            if(isRecording && mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            resetRecordButtonUI();
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        function resetRecordButtonUI() {
+            if(micIcon) micIcon.classList.remove('hidden');
+            if(stopIcon) stopIcon.classList.add('hidden');
+            
+            if(recordBtn) {
+                recordBtn.classList.remove('recording-pulse', 'bg-red-600', 'hover:bg-red-700', 'bg-gray-400', 'cursor-not-allowed');
+                recordBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                recordBtn.disabled = false;
+            }
+            
+            if(statusText) {
+                statusText.textContent = "Cevabını kaydetmek için mikrofona bas";
+                statusText.className = "mt-6 text-gray-500 font-medium bg-gray-100 dark:bg-gray-800 px-4 py-1 rounded-full text-sm";
+            }
+        }
+
+        // 4. KAYIT MANTIĞI
+        if(recordBtn) {
+            recordBtn.addEventListener('click', async () => {
+                if(!isRecording) {
+                    // BAŞLAT
+                    try {
+                        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                        mediaRecorder = new MediaRecorder(stream);
+                        audioChunks = [];
+                        
+                        mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                        mediaRecorder.onstop = sendAudioForAnalysis;
+                        
+                        mediaRecorder.start();
+                        isRecording = true;
+                        
+                        if(micIcon) micIcon.classList.add('hidden');
+                        if(stopIcon) stopIcon.classList.remove('hidden');
+                        recordBtn.classList.add('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                        recordBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                        
+                        if(statusText) {
+                            statusText.textContent = "Kayıt alınıyor... Bitirmek için butona tekrar basın.";
+                            statusText.className = "mt-6 text-red-600 font-bold bg-red-50 dark:bg-red-900/30 px-4 py-1 rounded-full text-sm";
+                        }
+                        
+                    } catch (err) {
+                        alert("Mikrofona erişilemedi. Lütfen izinleri kontrol edin.");
+                    }
+                } else {
+                    // DURDUR
+                    if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+                        mediaRecorder.stop();
+                    }
+                    isRecording = false;
+                    
+                    // UI Reset
+                    if(micIcon) micIcon.classList.remove('hidden');
+                    if(stopIcon) stopIcon.classList.add('hidden');
+                    recordBtn.classList.remove('recording-pulse', 'bg-red-600', 'hover:bg-red-700');
+                    recordBtn.classList.add('bg-gray-400', 'cursor-not-allowed'); 
+                    recordBtn.disabled = true;
+
+                    if(statusText) {
+                        statusText.textContent = "Analiz ediliyor...";
+                        statusText.className = "mt-6 text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-700 px-4 py-1 rounded-full text-sm animate-pulse";
+                    }
+                    
+                    // Analysis Loader'ı Göster
+                    if(analysisLoader) analysisLoader.classList.remove('hidden');
+                }
+            });
+        }
+
+        // 5. ANALİZ İÇİN GÖNDERME
+        async function sendAudioForAnalysis() {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append("audio", audioBlob, "recording.webm");
+            formData.append("task_prompt", currentPromptText); 
+            
+            
+            formData.append("level", level);
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : '';
+                
+                const res = await fetch('/api/assess_speaking', {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'X-CSRFToken': csrfToken }
+                });
+                
+                const data = await res.json();
+                
+                // SONUÇLARI GÖSTER
+                if(activeContent) activeContent.classList.add('hidden');
+                if(resultArea) resultArea.classList.remove('hidden');
+                
+                const setText = (id, text) => {
+                    const el = document.getElementById(id);
+                    if(el) el.textContent = text;
+                };
+
+                setText('userTranscript', data.transcription);
+                setText('aiCorrection', data.corrected_text);
+                setText('aiFeedback', data.feedback_tr || data.feedback);
+                setText('scoreTotal', data.total_score || "-");
+
+                setText('scoreGrammar', data.grammar_score);
+                setText('scoreVocabulary', data.vocabulary_score || "-");
+                setText('scoreCoherence', data.coherence_score || "-");
+                setText('scoreRelevance', data.relevance_score);
+
+                setText('scoreFluency', Math.round(data.fluency_score || 0));
+                setText('scorePronunciation', Math.round(data.pronunciation_score || 0));
+                setText('scoreAccuracy', Math.round(data.accuracy_score || 0));
+                setText('scoreProsody', Math.round(data.prosody_score || 0));
+                document.getElementById('resXpGain').innerText = `+${data.xp_gain} XP`;
+
+                setTimeout(() => { window.scrollTo({ top: 0, behavior: 'smooth' }); }, 100);
+
+            } catch(e) {
+                console.error(e);
+                alert("Analiz sırasında hata oluştu: " + e);
+                // Hata durumunda loader'ı gizle
+                if(analysisLoader) analysisLoader.classList.add('hidden');
+                resetRecordButtonUI(); 
+                if(statusText) statusText.textContent = "Hata oluştu. Tekrar deneyin.";
+            } finally {
+                // Analysis Loader'ı Gizle
+                if(analysisLoader) analysisLoader.classList.add('hidden');
+            }
+        }
+    });
+
+    const isExamNeeded = {{ 'true' if exam_needed else 'false' }};
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        if (isExamNeeded) {
+            const toast = document.getElementById('exam-toast');
+            toast.classList.remove('hidden');
+            // İkonları yükle
+            if(window.lucide) lucide.createIcons();
+        }
+    });
+
+    function closeToast() {
+        document.getElementById('exam-toast').classList.add('hidden');
+    }
+</script>
+{% endblock %}
