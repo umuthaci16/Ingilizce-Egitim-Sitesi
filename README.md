@@ -1,17 +1,8 @@
-Requirements
-- Python 3.10+ recommended
-- ffmpeg installed and in PATH (https://ffmpeg.org/download.html)
-- On Windows, install matching PyTorch package for your system from https://pytorch.org/get-started/locally/
+Okuma, yazma, dinleme ve konuşma pratikleri:
+İngilizce okuma, yazma, dinleme ve konuşma becerileri için seviye tespit sınavı yapılıyor ve sonrasında GPT 4o mini ile ilgili beceri ve ilgili seviyeye uygun ders içeriği oluşturabilir, ders içeriklerini cevaplayarak pratik yapabilirsiniz. 
+Pratik yaptıkça XP kazanırsınız ve XP barajını geçerseniz ilgili becerinin seviye atlama sınavına girersiniz. 
+Seviye atlama sınavında başarılı olunması halinde bir üst seviyeye geçersiniz, içerikler o seviyeye uygun olarak üretilir.
+Seviye atlama sınavının başarısız olunması halinde ise %15'lik bir XP kaybedersiniz ve 3 saat boyunca XP limitine gelmiş olsanız bile sınava bir daha giremezsiniz.
 
-Quick start (Windows PowerShell):
-
-```powershell
-python -m venv .venv; .\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-# If pip fails for torch, install torch separately per instructions on pytorch.org
-# Ensure ffmpeg is on PATH (download the build and add its bin folder to PATH)
-python app.py
-```
-
-Open http://127.0.0.1:5000 in your browser, allow microphone access, record and stop to upload and see the transcription (forced to English in the server code).
-
+Günlük senaryo pratiği:
+Günlük senaryo seçerek GPT 4o mini ile sohbet ederek kendinizi geliştirebilirsiniz.
